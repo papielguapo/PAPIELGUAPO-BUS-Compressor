@@ -8,7 +8,7 @@
 
 Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %. **Siempre se abre al mínimo: 817 × 126 (50 %), también al reabrir el editor o cargar sesiones antiguas.** Se puede ampliar durante el uso.
 
-## Controles actuales — 1.3.1
+## Controles actuales — 1.4.0
 
 - Threshold −15…+15 dB; Make-Up −5…+15 dB.
 - Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10.
@@ -19,11 +19,13 @@ Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.co
 
 Doble clic restaura valores y el popup indica el ajuste. Sin botón Analog ni ruido generado.
 
-## KI integrado y siempre activo
+## Armónicos limpios H2/H3 — 1.4.0
 
-KI ya no tiene interruptor visible. Se integra siempre en la ruta procesada, con **+25 dB en el componente armónico** respecto a 1.2.1: `x + 17.7827941 * k2*x*x/(1 + 0.25*x*x)`, con `k2 = (0.008 + 0.012*(1-g)) * gate`. No se amplifica la señal limpia 25 dB ni se añade un generador de ruido. La intensidad cae a niveles de entrada muy bajos.
+KI y su filtro de 18 Hz se han eliminado del audio. La nueva etapa añade un componente de segundo y tercer orden, sin controles nuevos, generador de ruido, saturación adicional ni ecualización de la señal limpia. El color es moderado: objetivos de referencia a 1 kHz y pico 0.2 de aproximadamente −60 dBc en H2 y −74 dBc en H3.
 
-La función armónica y el filtro infrasonoro Butterworth de cuarto orden a 18 Hz proceden de PWM TONE BOY, adaptados al VCA. Se aplican después de la reducción de ganancia y antes de Make-Up y FIX. El filtro de 18 Hz sí forma parte de la ruta de audio integrada; SC FILTER a 80 Hz afecta exclusivamente al detector. No se copia la cadena PWM/DAC/EQ del otro plugin ni su sobremuestreo 4×. El color más intenso también puede aumentar la distorsión, intermodulación y aliasing. POWER OFF y bypass del host dejan la señal original sin KI.
+Se procesa sólo el componente añadido con interpolación/filtrado 4× y polinomio de grado tres: `0.01*x*x - 0.02*x*x*x`. La ruta limpia se conserva y se retrasa para alinearla, sin pasarla por el filtro antialias. Se elimina DC sólo del componente añadido mediante un bloqueador a 1 Hz; no hay pasa-altos de 18 Hz sobre el audio. Se mantienen SC FILTER, FIX y el compresor VCA.
+
+El sobremuestreo introduce **64 samples de latencia**, declarados al host y alineados también en mezcla y bypass. A 48 kHz son 1.33 ms. El polinomio da H2/H3 en un tono simple dentro del rango normal, pero cualquier no linealidad puede producir intermodulación con señales complejas. No se promete ausencia matemática de otros productos sobre toda señal. La protección numérica sólo acota el componente añadido por encima de +6 dBFS; no recorta la señal limpia.
 
 ## FIX
 
@@ -31,9 +33,9 @@ RMS sin ponderación, integración de 400 ms, adaptación de 750 ms y transició
 
 ## DSP y compatibilidad
 
-Detector feed-forward enlazado en estéreo, rodillas suaves y release Auto propio. Referencia de rangos: [manual de Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). Modelo independiente sin afiliación Waves/SSL ni equivalencia sonora 1:1. Las mediciones SSLComp guardadas son referencias históricas de versiones anteriores; no certifican la respuesta actual con KI integrado.
+Detector feed-forward enlazado en estéreo, rodillas suaves y release Auto propio. Referencia de rangos: [manual de Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). Modelo independiente sin afiliación Waves/SSL ni equivalencia sonora 1:1. Las mediciones SSLComp guardadas son referencias históricas de versiones anteriores; no certifican la respuesta de la etapa H2/H3 actual.
 
-Latencia cero; se declara un segundo de cola para el filtro KI. Protección de entradas NaN/Inf y amplitudes absurdas mayores de ±1 000 000 (+120 dBFS), sin limitación de picos musicales normal. Parámetros antiguos de Mix/Trim/Fade/sidechain externo se conservan para sesiones y automatización existentes, neutros en estados nuevos. El parámetro legado KI se conserva pero se ignora: KI está siempre activo. El antiguo valor numérico de SC Filter se conserva por compatibilidad pero el interruptor actual utiliza 80 Hz fijos.
+Latencia declarada de 64 samples; cola conservadora de dos segundos para la eliminación de DC del componente añadido. Protección de entradas NaN/Inf y amplitudes absurdas mayores de ±1 000 000 (+120 dBFS), sin limitación de picos musicales normal. Parámetros antiguos de Mix/Trim/Fade/sidechain externo se conservan para sesiones y automatización existentes, neutros en estados nuevos. El parámetro legado KI se conserva pero se ignora: ya no existe esa etapa. El antiguo valor numérico de SC Filter se conserva por compatibilidad pero el interruptor actual utiliza 80 Hz fijos.
 
 ## Instalación y compilación
 

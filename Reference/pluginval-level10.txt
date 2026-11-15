@@ -1,13 +1,13 @@
-Random seed: 0xa3e45
+Random seed: 0xa3ea8
 Validation started
 Strictness level: 10
 -----------------------------------------------------------------
-Starting tests in: pluginval / Scan for plugins located in: C:\Users\anton\Documents\Codex\2026-11-15\en\outputs\VCA-SSL\Binaries\VCA SSL.vst3...
+Starting tests in: pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\VCA SSL.vst3...
 Num plugins found: 1
 
-Testing plugin: VST3-VCA SSL-396a88f3-6098018d
-Papielguapo: VCA SSL v1.3.1
-Completed tests in pluginval / Scan for plugins located in: C:\Users\anton\Documents\Codex\2026-11-15\en\outputs\VCA-SSL\Binaries\VCA SSL.vst3
+Testing plugin: VST3-VCA SSL-49c9ce56-6098018d
+Papielguapo: VCA SSL v1.4.0
+Completed tests in pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\VCA SSL.vst3
 -----------------------------------------------------------------
 Starting tests in: pluginval / Open plugin (cold)...
 Completed tests in pluginval / Open plugin (cold)
@@ -22,7 +22,7 @@ Plugin name: VCA SSL
 Alternative names: VCA SSL
 SupportsDoublePrecision: no
 Reported latency: 0
-Reported taillength: 1
+Reported taillength: 2
 Completed tests in pluginval / Plugin info
 -----------------------------------------------------------------
 Starting tests in: pluginval / Plugin programs...

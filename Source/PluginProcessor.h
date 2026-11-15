@@ -3,6 +3,7 @@
 #include <array>
 #include <atomic>
 #include <cmath>
+#include "HarmonicStage.h"
 
 class VCASSLProcessor final : public juce::AudioProcessor
 {
@@ -21,7 +22,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 1.0; }
+    double getTailLengthSeconds() const override { return 2.0; }
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
@@ -40,17 +41,11 @@ private:
         float tick(float x) noexcept { const float y = pole * (previousOutput + x - previousInput); previousInput = x; previousOutput = y; return y; }
         void clear() noexcept { previousInput = previousOutput = 0; }
     };
-    struct KiHighPass {
-        double b0=1,b1=0,b2=0,a1=0,a2=0,z1=0,z2=0;
-        void prepare(double sr,double q) noexcept {
-            const double w=juce::MathConstants<double>::twoPi*18.0/sr,c=std::cos(w),alpha=std::sin(w)/(2*q),d=1+alpha;
-            b0=(1+c)/(2*d);b1=-(1+c)/d;b2=b0;a1=-2*c/d;a2=(1-alpha)/d;
-        }
-        float tick(float x) noexcept {const double y=b0*x+z1;z1=b1*x-a1*y+z2;z2=b2*x-a2*y;return static_cast<float>(y);}
-        void clear() noexcept {z1=z2=0;}
-    };
-    std::array<HighPass, 2> sideHP;
-    std::array<std::array<KiHighPass,2>,2> kiHighPass;
+    std::array<HighPass,2> sideHP;
+    std::array<HarmonicStage,2> harmonics;
+    std::array<std::array<float,HarmonicStage::latency>,2> dryHistory{};
+    int dryPosition=0;
+    void processAudio(juce::AudioBuffer<float>&,juce::MidiBuffer&,bool hostBypassed);
 
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
         *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled;
@@ -61,7 +56,5 @@ private:
     double fixInputEnergy = 0, fixOutputEnergy = 0;
     std::array<double,2> fixInputChannelEnergy{}, fixOutputChannelEnergy{};
     double fixPostDb = 0, fixMeasurePole = 0, fixGainPole = 0;
-    float kiPeak=0, kiReleasePole=0;
-    bool wasBypassed = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VCASSLProcessor)
 };

@@ -1,29 +1,30 @@
-Start testing: Nov 15 19:14 Hora estándar romance
+Start testing: Nov 15 19:57 Hora estándar romance
 ----------------------------------------------------------
 1/1 Testing: DSP
 1/1 Test: DSP
 Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
 Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-"DSP" start time: Nov 15 19:14 Hora estándar romance
+"DSP" start time: Nov 15 19:57 Hora estándar romance
 Output:
 ----------------------------------------------------------
-Integrated KI H2/H3 dBc: -37.0247 / -168.608
-Ratio slope 0: 2.97525 dB
-Ratio slope 1: 1.48963 dB
-Ratio slope 2: 0.614215 dB
+Clean H2/H3 dBc: -59.9956 / -73.975
+Aliasing 18kHz, folded H2/H3 dBc: -150.698 / -155.478
+Ratio slope 0: 2.97497 dB
+Ratio slope 1: 1.48958 dB
+Ratio slope 2: 0.614207 dB
 SC 50Hz GR off/on dB: 13.2608 / 9.00415
-FIX RMS error 44100 Hz, 0.05: 0.000452013 dB
-FIX RMS error 44100 Hz, 0.5: -0.000432039 dB
-FIX RMS error 96000 Hz, 0.05: 0.000462953 dB
-FIX RMS error 96000 Hz, 0.5: -0.000437085 dB
-Low-level noise gain: -0.0043171 dB
-PASS: 8648639 checks; integrated KI +25dB, SC detector-only, FIX, noise, states, buses, hostile audio and automation
+FIX RMS error 44100 Hz, 0.05: 0.000433771 dB
+FIX RMS error 44100 Hz, 0.5: -0.000468119 dB
+FIX RMS error 96000 Hz, 0.05: 0.000463285 dB
+FIX RMS error 96000 Hz, 0.5: -0.000436955 dB
+Low-level noise gain: -0.000284967 dB
+PASS: 8937112 checks; clean H2/H3 antialiased, SC detector-only, FIX, noise, states, buses, hostile audio and automation
 <end of output>
-Test time =  31.89 sec
+Test time =  15.10 sec
 ----------------------------------------------------------
 Test Passed.
-"DSP" end time: Nov 15 19:15 Hora estándar romance
-"DSP" time elapsed: 00:00:31
+"DSP" end time: Nov 15 19:57 Hora estándar romance
+"DSP" time elapsed: 00:00:15
 ----------------------------------------------------------
 
-End testing: Nov 15 19:15 Hora estándar romance
+End testing: Nov 15 19:57 Hora estándar romance

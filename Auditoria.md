@@ -1,58 +1,59 @@
-# Auditoría VCA SSL COMPRESSOR 1.3.1 — papielguapo
+# Auditoría VCA SSL COMPRESSOR 1.4.0 — papielguapo
 
-Fecha: 15 de noviembre de 2026. Windows x64 Release, MSVC 19.51 / Visual Studio 2026 y JUCE 9.0.5.
+Fecha: 15 de noviembre de 2026. Windows x64 Release, MSVC 19.51 / Visual Studio 2026, JUCE 9.0.5.
 
-## Resultado final
+## Resultado
 
-**Pluginval 1.0.4, nivel 10: SUCCESS, código de salida 0.** Validada la copia distribuida en `Binaries/VCA SSL.vst3`, versión reportada 1.3.1, semilla 671301. Sin omitir pruebas de GUI. Tasas 44.1/48/96 kHz y bloques 64/128/256/512/1024. [Log íntegro](Reference/pluginval-level10.txt).
+**Pluginval 1.0.4 nivel 10: SUCCESS, código de salida 0**, ejecutado sobre la versión instalada en `C:/Program Files/Common Files/VST3/VCA SSL.vst3`. Semilla 671400, GUI habilitada, tasas 44.1/48/96 kHz y bloques 64/128/256/512/1024. Timeout de inactividad ampliado a 120 s, sin deshabilitar pruebas. [Log íntegro](Reference/pluginval-level10.txt).
 
-**Batería DSP: APROBADA**, con 8 648 639 comprobaciones internas (incluyen verificaciones por muestra, no son millones de casos independientes). [Log](Reference/Tests.txt). No se detectaron fallos bloqueantes en el alcance ejecutado.
+**Pruebas DSP aprobadas:** 8 937 112 comprobaciones internas, incluyendo verificaciones por muestra; no son millones de casos independientes. [Log](Reference/Tests.txt).
 
-SHA-256 del binario compilado y distribuido: `8E92C7EF3937CC68D1A7A5BC811A49D0435A7E81B4EC9852E270E8029ECA43C6`.
+SHA-256 del VST3 compilado, instalado y distribuido: `C289766900AB7D684B0F594A81478DA6B14DE6A1AF88D47691376092AA71DF9D`.
 
-## Configuración auditada
+## Cambio de audio
 
-- KI integrado permanentemente, sin interruptor visible, con +25 dB únicamente sobre el componente armónico respecto a 1.2.1.
-- Su antiguo interruptor controla SC FILTER: pasa-altos de 80 Hz sólo en el detector. Piloto morado pequeño en ON; apagado por defecto.
-- POWER y bypass del host entregan señal seca; FIX iguala RMS de salida con entrada original sin modificar el detector.
-- Los parámetros legados KI y SC numérico se conservan para no desplazar identificadores/índices. Sus valores no cambian KI integrado ni los 80 Hz del interruptor actual.
+Se ha eliminado KI: no quedan su transferencia, su incremento de 25 dB, su dependencia de GR ni su filtro de 18 Hz en la ruta de audio. Se mantienen los identificadores de parámetros antiguos para compatibilidad; el parámetro KI legado se ignora.
 
-## Mediciones y regresiones
+La nueva etapa suma únicamente un residual polinómico de grado tres al audio comprimido: `0.01*x*x - 0.02*x*x*x`. El residual se calcula con interpolación/filtrado FIR 4× (257 taps en cada conversión). La señal limpia se retrasa 64 samples para alinearla, sin pasarla por esos filtros. Se elimina DC con un bloqueador de 1 Hz sólo en el residual añadido.
+
+No hay generador de ruido, dither, gate armónico, saturador adicional, EQ ni pasa-altos de 18 Hz sobre la señal limpia. La protección del residual por encima de +6 dBFS evita crecimiento polinómico extremo y no recorta la ruta limpia. El compresor VCA, SC FILTER de 80 Hz y FIX se conservan. El editor sigue abriendo al mínimo, 817 × 126.
+
+## Mediciones
+
+Condición armónica: seno de 1 kHz, pico 0.2, 48 kHz, threshold +15 para que el compresor no actúe; análisis tras asentamiento.
 
 | Comprobación | Resultado |
 | --- | --- |
-| KI, seno 1 kHz y amplitud 0.2, threshold +15 | H2 −37.0247 dBc; H3 −168.608 dBc |
-| Refuerzo H2 frente al caso 1.2.1 (−62.0248 dBc) | +25.0001 dB |
-| Ruido de entrada muy bajo, pseudoaleatorio determinista | Ganancia RMS −0.0043171 dB; no aumenta en este ensayo |
+| H2 | −59.9956 dBc |
+| H3 | −73.9750 dBc |
+| H4–H12 | Todos por debajo de −110 dBc en el ensayo |
+| Tono 18 kHz: alias de H2 a 12 kHz | −150.698 dBc |
+| Tono 18 kHz: alias de H3 a 6 kHz | −155.478 dBc |
+| Cambio RMS de un fondo de ruido de entrada muy bajo | −0.000285 dB, sin aumento en el ensayo |
 | Silencio desde reposo / tras reset | Cero digital exacto |
-| Filtro infrasonoro KI de 18 Hz | Atenuación a 5 Hz mayor de 40 dB; DC bloqueado |
-| SC a 50 Hz, amplitud 0.5 | GR OFF 13.2608 dB / ON 9.00415 dB |
-| SC con detector sin comprimir | RMS y armónicos del audio idénticos OFF/ON |
-| FIX a 44.1 kHz | Errores +0.0004520 / −0.0004320 dB |
-| FIX a 96 kHz | Errores +0.0004630 / −0.0004371 dB |
-| Pendiente para un incremento de entrada de 6.0206 dB | 2:1 → 2.97525; 4:1 → 1.48963; 10:1 → 0.614215 dB |
+| Respuesta fundamental a 5 Hz frente a 1 kHz | Diferencia inferior a 0.02 dB; sin corte de 18 Hz |
+| FIX, 44.1 kHz | +0.000434 / −0.000468 dB |
+| FIX, 96 kHz | +0.000463 / −0.000437 dB |
 
-FIX conserva la reducción de ganancia exactamente igual al comparador con FIX apagado. Tras desactivarlo se recupera la ruta base exacta al concluir la transición. KI permanece activo incluso al cargar estados con el antiguo parámetro KI apagado. Persistencia de SC/FIX y estado antiguo sin SC: aprobados.
+Frente al alias de aproximadamente −37 dBc de KI +25 dB en el ensayo anterior de 18 kHz, la mejora medida es superior a 110 dB. Los valores cercanos a −150 dBc están condicionados por el render float32 y la precisión del ensayo; no se presentan como una especificación física universal.
 
-Comprobados mono/estéreo, bloques 0/1/7/31/127/511/1024, 8/48/192/384 kHz y cuatro combinaciones SC/FIX; reset, POWER, bypass y sidechain externo heredado. Las 30 combinaciones Attack/Release quedan estables en la prueba de cambios abruptos. Los casos NaN, infinitos y máximos float no contaminan salida ni medidores; se comprueba recuperación posterior.
+## Latencia, bypass y estabilidad
 
-Pluginval cubre carga fría/caliente, interfaz, editor durante procesamiento, estado/restauración, automatización con y sin editor, parámetros entre hilos, buses y fuzz de parámetros. Las imágenes del editor real se revisaron con SC OFF y ON.
+La latencia declarada es **64 samples**: 1.33 ms a 48 kHz. Pruebas de impulsos y bloques partidos confirman el retardo exacto de la mezcla seca y del bypass del host. El bypass continúa alimentando los estados internos para evitar una vuelta con estados reiniciados. La latencia la compensa el DAW según su configuración.
 
-## Revisión del código y límites
+Cola declarada conservadora de dos segundos para la eliminación de DC del residual. La sección informativa inicial de pluginval muestra 0 samples antes del procesamiento; el host offline, después de prepareToPlay, consulta y retira correctamente 64 samples. La cola reportada por pluginval es de dos segundos. POWER y bypass del host conservan la señal seca, alineada con ese retardo.
 
-Se conserva la protección numérica y la cola declarada de un segundo del filtro KI; latencia cero. En la revisión manual de processBlock no se observaron asignaciones, acceso a archivos, locks ni llamadas a GUI. No se ha instrumentado el hilo de audio con sanitizers o contadores de asignaciones.
+Pasan las pruebas de pendientes 2/4/10, todas las combinaciones Attack/Release, SC sólo en detector, sidechain externo heredado, FIX sin modificar GR, persistencia, estados antiguos, mono/estéreo, bloques de 0/1/7/31/127/511/1024 y tasas 8/48/192/384 kHz. Las entradas NaN/Inf/máximos float no contaminan salida ni medidores. En la revisión del callback no se observan asignaciones de memoria, archivos, locks ni llamadas a GUI: los buffers FIR son arrays de tamaño fijo.
 
-KI mantiene la etapa sin sobremuestreo: con +25 dB armónicos pueden aumentar aliasing e intermodulación. El ensayo de ruido prueba silencio y un fondo bajo; no garantiza ausencia de productos no lineales sobre cualquier material. SC sólo filtra el detector, pero el filtro infrasonoro integrado de KI sí actúa sobre el audio por debajo de 18 Hz.
+## Alcance
 
-FIX aproxima RMS y requiere estabilización; no es LUFS ni limitador true peak. No se garantiza ausencia de clipping con ajustes extremos. No se realizó sesión auditiva ni matriz completa de DAWs. No se afirma equivalencia sonora 1:1 con Waves. El validador independiente del SDK VST3 fue omitido por pluginval al no tener ruta configurada, y no se presenta como aprobado; auval no corresponde a este VST3 Windows.
+La etapa genera H2 y H3 en un tono simple dentro del rango normal. Las señales complejas producen intermodulación y la compresión puede generar otros productos; no se promete exclusividad matemática de H2/H3 para cualquier señal o nivel. La protección fuera de rango puede cambiar el espectro con entradas superiores a +6 dBFS.
+
+No se afirma ausencia absoluta de aliasing: se ha medido un caso exigente concreto. No se ha realizado escucha humana ni una matriz completa de DAWs. Pluginval no es certificación sonora ni equivalencia con Waves. El validador independiente del SDK VST3 se omitió al no estar configurado; auval no corresponde al formato Windows. Las diferencias de calibración por ratio y de recuperación Auto descritas en la comparación anterior no se han modificado en esta versión.
 
 Reproducción:
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
-pluginval --strictness-level 10 --random-seed 671301 --validate "C:/Program Files/Common Files/VST3/VCA SSL.vst3"
+pluginval --strictness-level 10 --random-seed 671400 --timeout-ms 120000 --validate "C:/Program Files/Common Files/VST3/VCA SSL.vst3"
 ```
-
-## Apertura mínima — 1.3.1
-
-El constructor del editor usa siempre 817 × 126 (50 %), independientemente del tamaño guardado en el estado. El redimensionado durante el uso sigue disponible. Las capturas se generaron sin forzar el tamaño y sus cabeceras PNG confirman 817 × 126. Audio sin cambios respecto a 1.3.0. Se repitieron la batería DSP y pluginval nivel 10 sobre el VST3 distribuido, con resultado aprobado.
