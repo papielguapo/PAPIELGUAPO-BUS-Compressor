@@ -6,9 +6,9 @@
 
 [Descargar para Windows x64: VST3, Standalone y código](https://github.com/papielguapo/VCASSL/releases/latest)
 
-Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %.
+Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %. **Siempre se abre al mínimo: 817 × 126 (50 %), también al reabrir el editor o cargar sesiones antiguas.** Se puede ampliar durante el uso.
 
-## Controles actuales — 1.3.0
+## Controles actuales — 1.3.1
 
 - Threshold −15…+15 dB; Make-Up −5…+15 dB.
 - Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10.

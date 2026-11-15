@@ -264,7 +264,7 @@ void FaceplateComponent::paint(juce::Graphics& g)
 }
 VCASSLEditor::VCASSLEditor(VCASSLProcessor& p):AudioProcessorEditor(p),processor(p),faceplate(p)
 {
-    const int initialWidth=juce::jlimit(817,4085,processor.editorWidth.load());
+    constexpr int initialWidth=817; // Always open at the minimum, including restored sessions.
     addAndMakeVisible(faceplate);setResizable(true,true);setResizeLimits(817,126,4085,630);
     getConstrainer()->setFixedAspectRatio(static_cast<double>(kBaseWidth)/kBaseHeight);
     setSize(initialWidth,juce::roundToInt(static_cast<double>(initialWidth)*kBaseHeight/kBaseWidth));resized();

@@ -23,7 +23,7 @@ Tone tone(VCASSLProcessor& p,double sr,double seconds,double frequency,float amp
 }
 }
 int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
- if(argc>1){VCASSLProcessor p;if(argc>2&&juce::String(argv[2])=="--sc-on")set(p,"scEnabled",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->setSize(kBaseWidth,kBaseHeight);ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::FileOutputStream stream{juce::File{juce::String(argv[1])}};check(stream.openedOk(),"preview stream");stream.setPosition(0);stream.truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,stream),"preview PNG");return 0;}
+ if(argc>1){VCASSLProcessor p;if(argc>2&&juce::String(argv[2])=="--sc-on")set(p,"scEnabled",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::FileOutputStream stream{juce::File{juce::String(argv[1])}};check(stream.openedOk(),"preview stream");stream.setPosition(0);stream.truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,stream),"preview PNG");return 0;}
  // Integrated KI is +25 dB in H2, without changing the VCA detector.
  VCASSLProcessor spectral;set(spectral,"threshold",15);prepare(spectral);const auto ki=tone(spectral,48000,3,1000,.2f);
  const double h2=20*std::log10(ki.harmonic[1]/ki.harmonic[0]),h3=20*std::log10(juce::jmax(1.e-12,ki.harmonic[2]/ki.harmonic[0]));

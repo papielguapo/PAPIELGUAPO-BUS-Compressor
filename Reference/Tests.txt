@@ -1,10 +1,10 @@
-Start testing: Nov 15 18:55 Hora estándar romance
+Start testing: Nov 15 19:14 Hora estándar romance
 ----------------------------------------------------------
 1/1 Testing: DSP
 1/1 Test: DSP
 Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
 Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-"DSP" start time: Nov 15 18:55 Hora estándar romance
+"DSP" start time: Nov 15 19:14 Hora estándar romance
 Output:
 ----------------------------------------------------------
 Integrated KI H2/H3 dBc: -37.0247 / -168.608
@@ -19,11 +19,11 @@ FIX RMS error 96000 Hz, 0.5: -0.000437085 dB
 Low-level noise gain: -0.0043171 dB
 PASS: 8648639 checks; integrated KI +25dB, SC detector-only, FIX, noise, states, buses, hostile audio and automation
 <end of output>
-Test time =   2.16 sec
+Test time =  31.89 sec
 ----------------------------------------------------------
 Test Passed.
-"DSP" end time: Nov 15 18:55 Hora estándar romance
-"DSP" time elapsed: 00:00:02
+"DSP" end time: Nov 15 19:15 Hora estándar romance
+"DSP" time elapsed: 00:00:31
 ----------------------------------------------------------
 
-End testing: Nov 15 18:55 Hora estándar romance
+End testing: Nov 15 19:15 Hora estándar romance

@@ -1,14 +1,14 @@
-# Auditoría VCA SSL COMPRESSOR 1.3.0 — papielguapo
+# Auditoría VCA SSL COMPRESSOR 1.3.1 — papielguapo
 
 Fecha: 15 de noviembre de 2026. Windows x64 Release, MSVC 19.51 / Visual Studio 2026 y JUCE 9.0.5.
 
 ## Resultado final
 
-**Pluginval 1.0.4, nivel 10: SUCCESS, código de salida 0.** Validada la copia instalada en `C:/Program Files/Common Files/VST3/VCA SSL.vst3`, versión reportada 1.3.0, semilla 671300. Sin omitir pruebas de GUI. Tasas 44.1/48/96 kHz y bloques 64/128/256/512/1024. [Log íntegro](Reference/pluginval-level10.txt).
+**Pluginval 1.0.4, nivel 10: SUCCESS, código de salida 0.** Validada la copia distribuida en `Binaries/VCA SSL.vst3`, versión reportada 1.3.1, semilla 671301. Sin omitir pruebas de GUI. Tasas 44.1/48/96 kHz y bloques 64/128/256/512/1024. [Log íntegro](Reference/pluginval-level10.txt).
 
 **Batería DSP: APROBADA**, con 8 648 639 comprobaciones internas (incluyen verificaciones por muestra, no son millones de casos independientes). [Log](Reference/Tests.txt). No se detectaron fallos bloqueantes en el alcance ejecutado.
 
-SHA-256 del binario instalado, coincidente con el compilado y distribuido: `E9B49E4D747CC4B5B692874226C5D993C29195463DBBEC27642E23B5DBDAD020`.
+SHA-256 del binario compilado y distribuido: `8E92C7EF3937CC68D1A7A5BC811A49D0435A7E81B4EC9852E270E8029ECA43C6`.
 
 ## Configuración auditada
 
@@ -50,5 +50,9 @@ Reproducción:
 
 ```powershell
 ctest --test-dir build -C Release --output-on-failure
-pluginval --strictness-level 10 --random-seed 671300 --validate "C:/Program Files/Common Files/VST3/VCA SSL.vst3"
+pluginval --strictness-level 10 --random-seed 671301 --validate "C:/Program Files/Common Files/VST3/VCA SSL.vst3"
 ```
+
+## Apertura mínima — 1.3.1
+
+El constructor del editor usa siempre 817 × 126 (50 %), independientemente del tamaño guardado en el estado. El redimensionado durante el uso sigue disponible. Las capturas se generaron sin forzar el tamaño y sus cabeceras PNG confirman 817 × 126. Audio sin cambios respecto a 1.3.0. Se repitieron la batería DSP y pluginval nivel 10 sobre el VST3 distribuido, con resultado aprobado.

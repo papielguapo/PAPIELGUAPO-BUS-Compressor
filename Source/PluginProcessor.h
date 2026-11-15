@@ -32,7 +32,7 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout makeParameters();
     juce::AudioProcessorValueTreeState apvts;
     std::atomic<float> currentGrDb { 0.0f }, currentOutDb { -100.0f };
-    std::atomic<int> editorWidth { 1634 }, editorHeight { 252 };
+    std::atomic<int> editorWidth { 817 }, editorHeight { 126 };
 private:
     struct HighPass
     {
