@@ -121,9 +121,9 @@ FaceplateComponent::FaceplateComponent(VCASSLProcessor& p):processor(p)
         };
         knobAttachments[i]=std::make_unique<SA>(processor.apvts,ids[i],s);
     }
-    const char* switchIds[]{"power","meterMode","fix"};
-    const char* tips[]{"Power: on / dry passthrough","Meter: gain reduction / output","FIX: match output RMS to original input for level-matched comparison"};
-    for(size_t i=0;i<switches.size();++i) {auto& b=switches[i];addAndMakeVisible(b);b.setName(switchIds[i]);b.setTitle(tips[i]);b.setTooltip(tips[i]);b.setClickingTogglesState(true);if(i==0||i==2)b.getProperties().set("reverse",true);switchAttachments[i]=std::make_unique<BA>(processor.apvts,switchIds[i],b);}
+    const char* switchIds[]{"power","meterMode","fix","ki"};
+    const char* tips[]{"Power: on / dry passthrough","Meter: gain reduction / output","FIX: match output RMS to original input for level-matched comparison","KI: gentle even harmonics and 18 Hz infra filter, as in PWM TONE BOY"};
+    for(size_t i=0;i<switches.size();++i) {auto& b=switches[i];addAndMakeVisible(b);b.setName(switchIds[i]);b.setTitle(tips[i]);b.setTooltip(tips[i]);b.setClickingTogglesState(true);if(i==0||i==2||i==3)b.getProperties().set("reverse",true);switchAttachments[i]=std::make_unique<BA>(processor.apvts,switchIds[i],b);}
     startTimerHz(60);
 }
 FaceplateComponent::~FaceplateComponent() {stopTimer();setLookAndFeel(nullptr);}
@@ -134,6 +134,7 @@ void FaceplateComponent::resized()
     switches[0].setBounds(204,137,50,36);
     switches[1].setBounds(1169,135,50,36);
     switches[2].setBounds(1299,135,50,36);
+    switches[3].setBounds(1039,135,50,36);
 }
 void FaceplateComponent::timerCallback()
 {
@@ -234,6 +235,12 @@ void FaceplateComponent::paint(juce::Graphics& g)
     text(g,"METER",1158,171,82,18,11);
     text(g,"ON",1280,145,30,15,10);text(g,"OFF",1349,145,35,15,10);
     text(g,"FIX",1288,171,82,18,11);
+    text(g,"ON",1020,145,30,15,10);text(g,"OFF",1089,145,35,15,10);
+    text(g,"KI",1028,171,82,18,11);
+    const bool kiOn=processor.apvts.getRawParameterValue("ki")->load()>0.5f;
+    if(kiOn){g.setGradientFill(juce::ColourGradient(colour(0xffbc65ff).withAlpha(0.55f),1012,153,juce::Colours::transparentBlack,1020,153,true));g.fillEllipse(1004,145,16,16);}
+    g.setColour(colour(0xff784a96));g.drawEllipse(1009,150,6,6,0.8f);
+    g.setColour(colour(kiOn?0xffd49aff:0xff665470));g.fillEllipse(1010,151,4,4);
     // Hand-drawn vector script, independent of installed fonts.
     juce::Path signature;
     signature.startNewSubPath(0,22);signature.lineTo(12,2);signature.cubicTo(25,-3,25,7,13,12);signature.lineTo(7,12);

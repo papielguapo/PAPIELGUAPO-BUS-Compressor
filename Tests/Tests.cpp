@@ -15,7 +15,7 @@ int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
  for(int offset=0;offset<144000;offset+=128){for(int i=0;i<128;++i){float x=std::pow(10.f,level/20.f)*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*1000*(offset+i)/48000.));b.setSample(0,i,x);b.setSample(1,i,x);}p.processBlock(b,m);if(offset>96000)for(int i=0;i<128;++i){double x=b.getSample(0,i);energy+=x*x;++count;}}
  std::cout<<"TRANSFER,"<<level<<","<<10*std::log10(energy/count)<<"\n";}return 0;}
 
- if(argc>1){std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->setSize(kBaseWidth,kBaseHeight);ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::File f{juce::String(argv[1])};auto stream=f.createOutputStream();check(stream!=nullptr,"preview file");stream->setPosition(0);stream->truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,*stream),"preview render");return 0;}
+ if(argc>1){if(argc>2&&juce::String(argv[2])=="--ki-on")set(p,"ki",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->setSize(kBaseWidth,kBaseHeight);ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::File f{juce::String(argv[1])};auto stream=f.createOutputStream();check(stream!=nullptr,"preview file");stream->setPosition(0);stream->truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,*stream),"preview render");return 0;}
  for(double sr:{44100.,48000.,96000.}){p.setRateAndBufferSizeDetails(sr,128);set(p,"threshold",-15);set(p,"attack",0);set(p,"release",0);p.prepareToPlay(sr,128);
  for(int r=0;r<3;++r){set(p,"ratio",static_cast<float>(r));p.reset();float a=run(p,.1f);p.reset();float b=run(p,.2f);float slope=20*std::log10(b/a);float expected=20*std::log10(2.f)/(r==0?2:r==1?4:10);check(std::abs(slope-expected)<.04f,"ratio slope");}
  set(p,"mix",0);p.reset();check(std::abs(run(p,.25f)-.25f)<1.e-7f,"dry mix");set(p,"mix",100);
@@ -40,6 +40,20 @@ int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
   for(int j=0;j<100;++j){a.clear();matched.processBlock(a,m);check(a.getMagnitude(0,128)==0,"FIX adds no noise in silence");}
   set(matched,"power",0);matched.reset();for(int i=0;i<128;++i){a.setSample(0,i,.2f);a.setSample(1,i,.1f);}matched.processBlock(a,m);check(a.getSample(0,127)==.2f,"FIX respects Power off");
  }
+ // KI reuses the PWM even transfer: predominantly H2, DC blocked, exact clean path when off.
+ auto kiSpectrum=[&](bool active,double frequency,bool levelMatch=false){VCASSLProcessor q;set(q,"ki",active?1.f:0.f);set(q,"fix",levelMatch?1.f:0.f);set(q,"threshold",15);q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);
+  juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;double re[3]{},im[3]{},sum=0,energy=0;int count=0;
+  for(int offset=0;offset<48000*9;offset+=128){for(int i=0;i<128;++i){float x=.2f*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*frequency*(offset+i)/48000));b.setSample(0,i,x);b.setSample(1,i,x);}q.processBlock(b,m);
+   if(offset>=48000*8)for(int i=0;i<128&&offset+i<48000*9;++i){const double x=b.getSample(0,i),t=juce::MathConstants<double>::twoPi*frequency*(offset+i)/48000;sum+=x;energy+=x*x;++count;for(int h=0;h<3;++h){re[h]+=x*std::cos((h+1)*t);im[h]+=x*std::sin((h+1)*t);}}}
+  std::array<double,5> result{};for(int h=0;h<3;++h)result[static_cast<size_t>(h)]=2*std::hypot(re[h],im[h])/count;result[3]=sum/count;result[4]=std::sqrt(energy/count);return result;};
+ const auto cleanKi=kiSpectrum(false,1000),activeKi=kiSpectrum(true,1000),infraKi=kiSpectrum(true,5),kiWithFix=kiSpectrum(true,1000,true);
+ const double h2=20*std::log10(activeKi[1]/activeKi[0]),h3=20*std::log10(juce::jmax(1.e-12,activeKi[2]/activeKi[0]));
+ std::cout<<"KI H2/H3 dBc: "<<h2<<" / "<<h3<<"\n";
+ check(h2>-65&&h2<-59&&h2>h3+20,"KI produces gentle predominantly second harmonic");
+ check(activeKi[1]>cleanKi[1]*100,"KI H2 differs from clean path");check(std::abs(activeKi[3])<.000001,"KI DC blocked");
+ check(20*std::log10(infraKi[0]/activeKi[0])<-40,"KI 18Hz fourth-order infra filter");
+ check(std::abs(20*std::log10(kiWithFix[4]/(.2/std::sqrt(2.))))<.1,"FIX RMS matching works with KI");
+ {VCASSLProcessor q;set(q,"ki",1);q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(2,128);b.clear();juce::MidiBuffer m;q.processBlock(b,m);check(b.getMagnitude(0,128)==0,"KI adds no noise at rest");juce::MemoryBlock state;q.getStateInformation(state);VCASSLProcessor loaded;loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("ki")->load()>.5f,"KI state persistence");}
  // With no analog stage, digital silence remains exact.
  {VCASSLProcessor q;q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
  for(int j=0;j<500;++j){b.clear();q.processBlock(b,m);check(b.getMagnitude(0,128)==0,"digital silence, no added noise");}}
