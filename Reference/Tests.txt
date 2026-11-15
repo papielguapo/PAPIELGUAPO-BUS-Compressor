@@ -1,0 +1,7 @@
+Test project C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
+    Start 1: DSP
+1/1 Test #1: DSP ..............................   Passed    1.06 sec
+
+100% tests passed out of 1
+
+Total Test time (real) =   1.07 sec
