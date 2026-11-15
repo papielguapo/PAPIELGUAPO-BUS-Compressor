@@ -1,4 +1,4 @@
-# Verificación — VCA SSL 1.0
+# Verificación — VCA SSL 1.0.1
 
 Base FET67: commit ecd6fc7f37d69fa31560461fd76dd5188ffe9069. Compilación Windows x64, MSVC 19.51, Visual Studio 2026, JUCE local 9.0.5. VST3 y Standalone generados. No incluye instalador ni firma digital.
 
@@ -20,3 +20,7 @@ Referencia instalada: Waves SSLComp Stereo V14.12, Analog Off, Threshold 0, Make
 La diferencia máxima en estos ocho puntos es 0.755 dB. La rodilla y las envolventes son propias; esto no constituye equivalencia sonora 1:1. Sólo se ha ajustado la calibración a esta curva, no una matriz completa de ratios, umbrales, frecuencias y transitorios. La traza STEP de Waves se conserva como referencia sin afirmar coincidencia. La sección FREQUENCY del host heredado arrastra historia previa del detector y no se utiliza para caracterizar la respuesta en frecuencia.
 
 Preview.png se renderizó desde el editor real y se revisó visualmente. No se ha realizado prueba auditiva ni matriz de compatibilidad de DAWs.
+
+Versión 1.0.1: eliminado únicamente el botón BYPASS del frontal y sus etiquetas; se mantiene el parámetro de bypass del host para compatibilidad. DSP sin cambios.
+
+Frontal final 1.0.1: retirados también FADE, EXT SC y SC Hz/MIX/TRIM/RATE; permanecen cinco mandos, POWER y METER. Parámetros conservados para sesiones existentes.

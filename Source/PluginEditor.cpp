@@ -103,27 +103,26 @@ void VCASSLLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& 
 FaceplateComponent::FaceplateComponent(VCASSLProcessor& p):processor(p)
 {
     setLookAndFeel(&look);
-    const char* ids[]{"threshold","makeup","attack","release","ratio","scFilter","mix","trim","fadeRate"};
-    const char* names[]{"Threshold","Make-Up","Attack","Release","Ratio","SC Filter","Mix","Trim","Fade seconds"};
+    const char* ids[]{"threshold","makeup","attack","release","ratio"};
+    const char* names[]{"Threshold","Make-Up","Attack","Release","Ratio"};
     for(size_t i=0;i<knobs.size();++i)
     {
         auto& s=knobs[i];addAndMakeVisible(s);s.setName(names[i]);s.setTitle(names[i]);
         s.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);s.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
         s.setRotaryParameters(juce::MathConstants<float>::pi*7/6,juce::MathConstants<float>::pi*17/6,true);
         s.setPopupDisplayEnabled(true,true,this);s.setMouseDragSensitivity(180);s.setScrollWheelEnabled(true);
-        s.setDoubleClickReturnValue(true,i==2?4.0:i==3?4.0:i==4?1.0:i==6?100.0:i==8?10.0:0.0);
+        s.setDoubleClickReturnValue(true,i==2?4.0:i==3?4.0:i==4?1.0:0.0);
         s.textFromValueFunction=[i](double v)
         {
             if(i==4) {const char* labels[]{"2:1","4:1","10:1"};return juce::String(labels[juce::jlimit(0,2,juce::roundToInt(v))]);}
             if(i==2) {const char* labels[]{"0.1 ms","0.3 ms","1 ms","3 ms","10 ms","30 ms"};return juce::String(labels[juce::jlimit(0,5,juce::roundToInt(v))]);}
             if(i==3) {const char* labels[]{"0.1 s","0.3 s","0.6 s","1.2 s","Auto"};return juce::String(labels[juce::jlimit(0,4,juce::roundToInt(v))]);}
-            if(i==5)return v<0.5?juce::String("OFF"):juce::String(juce::jmax(21.0,v),0)+" Hz";
-            return juce::String(v,1)+(i==6?" %":i==8?" s":" dB");
+            return juce::String(v,1)+" dB";
         };
         knobAttachments[i]=std::make_unique<SA>(processor.apvts,ids[i],s);
     }
-    const char* switchIds[]{"power","meterMode","bypass","fade","externalSC"};
-    const char* tips[]{"Power: on / dry passthrough","Meter: gain reduction / output","Bypass: compressor in / dry out","Autofade: out / in, duration set by RATE","External sidechain (enable bus in host)"};
+    const char* switchIds[]{"power","meterMode"};
+    const char* tips[]{"Power: on / dry passthrough","Meter: gain reduction / output"};
     for(size_t i=0;i<switches.size();++i) {auto& b=switches[i];addAndMakeVisible(b);b.setName(switchIds[i]);b.setTitle(tips[i]);b.setTooltip(tips[i]);b.setClickingTogglesState(true);if(i==0)b.getProperties().set("reverse",true);switchAttachments[i]=std::make_unique<BA>(processor.apvts,switchIds[i],b);}
     startTimerHz(60);
 }
@@ -132,11 +131,8 @@ void FaceplateComponent::resized()
 {
     constexpr int centres[]{374,511,649,787,924};
     for(size_t i=0;i<5;++i)knobs[i].setBounds(centres[i]-38,80,76,76);
-    for(int i=0;i<4;++i)knobs[static_cast<size_t>(i+5)].setBounds(1018+i*96,199,34,34);
-    switches[3].setBounds(1430,172,50,36); switches[4].setBounds(1500,172,50,36);
     switches[0].setBounds(204,137,50,36);
     switches[1].setBounds(1169,135,50,36);
-    switches[2].setBounds(1299,135,50,36);
 }
 void FaceplateComponent::timerCallback()
 {
@@ -232,15 +228,9 @@ void FaceplateComponent::paint(juce::Graphics& g)
     }
     paintMeter(g);
     g.setColour(colour(0xff171c1f));
-    const char* extra[]{"SC Hz","MIX %","TRIM dB","RATE s"};
-    for(int i=0;i<4;++i){text(g,extra[i],1052.0f+static_cast<float>(i)*96,198,57,14,9);text(g,knobs[static_cast<size_t>(i+5)].getTextFromValue(knobs[static_cast<size_t>(i+5)].getValue()),1050.0f+static_cast<float>(i)*96,215,62,14,9);}
-    text(g,"FADE OUT",1420,211,70,14,9);text(g,"EXT SC",1490,211,70,14,9);
-    for(int i=1;i<3;++i)
-    {
-        const float cx=1064+130.0f*static_cast<float>(i);
-        const char* lhs[]{"ON","GR","IN"};const char* rhs[]{"OFF","OUT","OUT"};const char* title[]{"","METER","BYPASS"};
-        g.setColour(colour(0xff1b2225));text(g,lhs[i],cx-44,145,30,15,10);text(g,rhs[i],cx+25,145,35,15,10);text(g,title[i],cx-36,171,82,18,11);
-    }
+    g.setColour(colour(0xff1b2225));
+    text(g,"GR",1150,145,30,15,10);text(g,"OUT",1219,145,35,15,10);
+    text(g,"METER",1158,171,82,18,11);
     // Hand-drawn vector script, independent of installed fonts.
     juce::Path signature;
     signature.startNewSubPath(0,22);signature.lineTo(12,2);signature.cubicTo(25,-3,25,7,13,12);signature.lineTo(7,12);

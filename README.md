@@ -10,7 +10,9 @@ Compresor de bus VCA original basado en el frontal vectorial de [FET67](https://
 
 ## Controles
 
-Threshold −15…+15 dBu; Make-Up −5…+15 dB; Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10; SC Filter Off o 21…500 Hz (valores 1…20 equivalen a 21 Hz); Mix 0…100%; Trim −18…+18 dB; Rate 1…60 s. Sin modo Analog, saturación ni ruido añadido. Power y Bypass entregan señal seca; Meter alterna GR/OUT. FADE OUT activa fundido a cero; desactivarlo vuelve a unidad desde la posición actual. EXT SC utiliza el bus auxiliar cuando el host lo habilita; en caso contrario utiliza entrada interna. Doble clic restaura el valor inicial y el popup indica el valor exacto.
+El frontal contiene únicamente Threshold −15…+15 dBu, Make-Up −5…+15 dB, Attack 0.1/0.3/1/3/10/30 ms, Release 0.1/0.3/0.6/1.2 s/Auto y Ratio 2/4/10. POWER enciende/apaga el procesamiento y METER alterna GR/OUT. Sin modo Analog, saturación ni ruido añadido. Doble clic restaura el valor inicial y el popup indica el valor exacto.
+
+Se han retirado del frontal BYPASS, FADE, EXT SC y la fila SC Hz / MIX / TRIM / RATE. Los parámetros internos se conservan para compatibilidad con sesiones y automatización anteriores; en un estado nuevo están neutros: SC Off, Mix 100%, Trim 0 dB, Fade Off y detector interno. El bypass del DAW sigue disponible.
 
 Referencia de rangos: [manual oficial Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). No incluye código, recursos ni presets de Waves. Modelo propio, sin afiliación ni certificación Waves/SSL. No se afirma equivalencia sonora 1:1. Auto, knee y autofade son implementaciones propias; se ha medido SSLComp Stereo V14.12 instalado para aproximar la calibración del detector, con Analog Off. El control Fade es de dos estados, sin el tercer estado de cancelación descrito en su manual.
 

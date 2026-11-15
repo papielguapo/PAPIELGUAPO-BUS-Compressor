@@ -1,7 +1,19 @@
-Test project C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-    Start 1: DSP
-1/1 Test #1: DSP ..............................   Passed    1.06 sec
+Start testing: Nov 15 18:11 Hora estándar romance
+----------------------------------------------------------
+1/1 Testing: DSP
+1/1 Test: DSP
+Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
+Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
+"DSP" start time: Nov 15 18:11 Hora estándar romance
+Output:
+----------------------------------------------------------
+PASS: slopes 2/4/10, stereo link, mix, bypass, power, all attack/release settings, fade, state; 44.1/48/96 kHz
+<end of output>
+Test time =   1.32 sec
+----------------------------------------------------------
+Test Passed.
+"DSP" end time: Nov 15 18:11 Hora estándar romance
+"DSP" time elapsed: 00:00:01
+----------------------------------------------------------
 
-100% tests passed out of 1
-
-Total Test time (real) =   1.07 sec
+End testing: Nov 15 18:11 Hora estándar romance
