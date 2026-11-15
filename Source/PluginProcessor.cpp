@@ -21,7 +21,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VCASSLProcessor::makeParamet
  f("scFilter","SC Filter (0=Off, 21-500 Hz)",0,500,0,1); f("mix","Mix (%)",0,100,100,0.1f);
  f("trim","Trim (dB)",-18,18,0); f("fadeRate","Fade duration (s)",1,60,10,0.1f);
  b("fade","Fade Out",false); b("externalSC","External Sidechain",false);
- b("meterMode","Meter Output",false); b("bypass","Bypass",false); return p;
+ b("meterMode","Meter Output",false); b("bypass","Bypass",false); b("fix","FIX Level Match",false); return p;
 }
 VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("Input",juce::AudioChannelSet::stereo(),true).withOutput("Output",juce::AudioChannelSet::stereo(),true).withInput("Sidechain",juce::AudioChannelSet::stereo(),false)),apvts(*this,nullptr,"VCASSL",makeParameters()) {
  power=apvts.getRawParameterValue("power");
@@ -37,6 +37,7 @@ VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("I
  fade=apvts.getRawParameterValue("fade");
  fadeRate=apvts.getRawParameterValue("fadeRate");
  externalSC=apvts.getRawParameterValue("externalSC");
+ fix=apvts.getRawParameterValue("fix");
 }
 bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
  const auto main=l.getMainInputChannelSet(); const auto sc=l.getChannelSet(true,1);
@@ -46,9 +47,13 @@ bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
 void VCASSLProcessor::prepareToPlay(double sr,int) {
  rate=juce::jmax(8000.0,sr);
  for(auto* s:{&thresholdDb,&makeupGain,&trimGain,&wet,&enabled,&scHz}) s->reset(rate,0.02);
+ fixBlend.reset(rate,0.05);
+ fixMeasurePole=static_cast<float>(std::exp(-1.0/(rate*0.4)));
+ fixGainPole=static_cast<float>(std::exp(-1.0/(rate*0.75)));
  meterRelease=static_cast<float>(std::exp(-1.0/(rate*0.25))); rmsPole=static_cast<float>(std::exp(-1.0/(rate*0.3))); reset();
 }
 void VCASSLProcessor::reset() {
+ fixInputChannelEnergy.fill(0);fixOutputChannelEnergy.fill(0);fixInputEnergy=fixOutputEnergy=0;fixPostDb=0;fixBlend.setCurrentAndTargetValue(fix->load()>0.5f?1.f:0.f);
  for(auto& h:sideHP) h.clear(); envelope=slowEnvelope=rms=grMeter=0; fadeGain=fade->load()>0.5f?0.f:1.f;
  thresholdDb.setCurrentAndTargetValue(threshold->load()); makeupGain.setCurrentAndTargetValue(gain(makeup->load()));
  trimGain.setCurrentAndTargetValue(gain(trim->load())); wet.setCurrentAndTargetValue(mix->load()/100.f);
@@ -66,9 +71,15 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
  const float r=ratios[juce::jlimit(0,2,juce::roundToInt(ratio->load()))];
  const float ac=static_cast<float>(std::exp(-1.0/(rate*attacks[ai])));
  const float slowCharge=static_cast<float>(std::exp(-1.0/(rate*0.4)));
+ fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
  const float fadeStep=1.f/static_cast<float>(rate*fadeRate->load());
  for(int i=0;i<b.getNumSamples();++i) {
   float dry[2]{};for(int ch=0;ch<n;++ch){const float x=b.getSample(ch,i);dry[ch]=std::isfinite(x)?x:0.f;}
+  // Measure the original input independently; FIX never changes the compressor drive.
+  constexpr double fixGateEnergy = 1.e-7;
+  fixInputEnergy=0;for(int ch=0;ch<n;++ch){auto& e=fixInputChannelEnergy[static_cast<size_t>(ch)];
+   e=fixMeasurePole*e+(1-fixMeasurePole)*static_cast<double>(dry[ch])*dry[ch];fixInputEnergy=juce::jmax(fixInputEnergy,e);}
+  const float fixing=fixBlend.getNextValue();
   const float hz=scHz.getNextValue(); const float pole=static_cast<float>(std::exp(-juce::MathConstants<double>::twoPi*juce::jmax(21.f,hz)/rate));
   float detector=0;const int sn=ext?side.getNumChannels():n;
   for(int ch=0;ch<sn;++ch){float x=ext?side.getSample(ch,i):dry[ch];if(!std::isfinite(x))x=0;
@@ -84,11 +95,18 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   envelope=coeff*envelope+(1-coeff)*target;
   fadeGain=juce::jlimit(0.f,1.f,fadeGain+(fade->load()>0.5f?-fadeStep:fadeStep));
   const float mg=makeupGain.getNextValue(),tg=trimGain.getNextValue(),w=wet.getNextValue(),on=enabled.getNextValue();
+  float compressed[2]{};fixOutputEnergy=0;
+  for(int ch=0;ch<n;++ch){const float x=dry[ch]*gain(-envelope)*mg;
+   compressed[ch]=(dry[ch]+w*(x-dry[ch]))*tg;auto& e=fixOutputChannelEnergy[static_cast<size_t>(ch)];
+   e=fixMeasurePole*e+(1-fixMeasurePole)*static_cast<double>(compressed[ch])*compressed[ch];fixOutputEnergy=juce::jmax(fixOutputEnergy,e);}
+  if(fixInputEnergy>fixGateEnergy&&fixOutputEnergy>fixGateEnergy){
+   const float wanted=juce::jlimit(-24.f,24.f,10.f*static_cast<float>(std::log10(fixInputEnergy/fixOutputEnergy)));
+   fixPostDb=fixGainPole*fixPostDb+(1-fixGainPole)*wanted;}
+  const float postGain=1.f+fixing*(gain(fixPostDb)-1.f);
   float energy=0;
-  for(int ch=0;ch<n;++ch){float x=dry[ch]*gain(-envelope)*mg;
-
-   const float processed=(dry[ch]+w*(x-dry[ch]))*tg*fadeGain;
+  for(int ch=0;ch<n;++ch){const float processed=compressed[ch]*postGain*fadeGain;
    const float out=on<=0?dry[ch]:dry[ch]+on*(processed-dry[ch]);b.setSample(ch,i,out);energy=juce::jmax(energy,out*out);}
+
   rms=rmsPole*rms+(1-rmsPole)*energy;grMeter=juce::jmax(envelope*on,grMeter*meterRelease);
  }
  currentGrDb.store(grMeter);currentOutDb.store(10.f*std::log10(juce::jmax(1.e-10f,rms)));

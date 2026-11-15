@@ -24,6 +24,22 @@ int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
  for(int a=0;a<6;++a)for(int r=0;r<5;++r){set(p,"attack",static_cast<float>(a));set(p,"release",static_cast<float>(r));p.reset();run(p,.7f,40);}
  set(p,"fadeRate",1);set(p,"fade",1);p.reset();check(std::abs(run(p,.5f,500))<1.e-8f,"fade out");set(p,"fade",0);check(run(p,.5f,900)>0,"fade in");
  }
+ // FIX must match RMS while leaving the detector/GR unchanged and preserving stereo balance.
+ for(double sr:{44100.,96000.})for(float amplitude:{.05f,.5f}){
+  VCASSLProcessor matched,reference;for(auto* q:{&matched,&reference}){q->setRateAndBufferSizeDetails(sr,128);set(*q,"makeup",amplitude<.1f?12.f:0.f);set(*q,"trim",3.f);q->prepareToPlay(sr,128);}set(matched,"fix",1);
+  juce::AudioBuffer<float>a(2,128),b(2,128);juce::MidiBuffer m;double inputSum=0,outputSum=0;int count=0;
+  for(int offset=0;offset<static_cast<int>(sr*12);offset+=128){if(offset>=static_cast<int>(sr*9))set(matched,"fix",0);
+   for(int i=0;i<128;++i){float x=amplitude*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr));a.setSample(0,i,x);a.setSample(1,i,x*.5f);b.setSample(0,i,x);b.setSample(1,i,x*.5f);}
+   matched.processBlock(a,m);reference.processBlock(b,m);check(std::abs(matched.currentGrDb.load()-reference.currentGrDb.load())<.00001f,"FIX must not change compression");
+   for(int i=0;i<128;++i){const float x=a.getSample(0,i);check(std::isfinite(x),"FIX finite");check(std::abs(a.getSample(1,i)-x*.5f)<.000001f,"FIX stereo balance");
+    if(offset>=static_cast<int>(sr*7)&&offset<static_cast<int>(sr*9)){double original=amplitude*std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr);inputSum+=original*original;outputSum+=static_cast<double>(x)*x;++count;}
+    if(offset>static_cast<int>(sr*10))check(x==b.getSample(0,i),"FIX off restores exact original DSP");}
+  }
+  check(count>0,"FIX measurement samples");const double error=10*std::log10(outputSum/inputSum);std::cout<<"FIX RMS error dB at "<<sr<<" Hz, amplitude "<<amplitude<<": "<<error<<"\n";check(std::abs(error)<.1,"FIX RMS match within 0.1 dB");
+  set(matched,"fix",1);juce::MemoryBlock state;matched.getStateInformation(state);VCASSLProcessor loaded;loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("fix")->load()>.5f,"FIX state persistence");
+  for(int j=0;j<100;++j){a.clear();matched.processBlock(a,m);check(a.getMagnitude(0,128)==0,"FIX adds no noise in silence");}
+  set(matched,"power",0);matched.reset();for(int i=0;i<128;++i){a.setSample(0,i,.2f);a.setSample(1,i,.1f);}matched.processBlock(a,m);check(a.getSample(0,127)==.2f,"FIX respects Power off");
+ }
  // With no analog stage, digital silence remains exact.
  {VCASSLProcessor q;q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
  for(int j=0;j<500;++j){b.clear();q.processBlock(b,m);check(b.getMagnitude(0,128)==0,"digital silence, no added noise");}}

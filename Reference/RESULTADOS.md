@@ -1,4 +1,4 @@
-# Verificación — VCA SSL 1.0.1
+# Verificación — VCA SSL 1.1.0
 
 Base FET67: commit ecd6fc7f37d69fa31560461fd76dd5188ffe9069. Compilación Windows x64, MSVC 19.51, Visual Studio 2026, JUCE local 9.0.5. VST3 y Standalone generados. No incluye instalador ni firma digital.
 
@@ -24,3 +24,9 @@ Preview.png se renderizó desde el editor real y se revisó visualmente. No se h
 Versión 1.0.1: eliminado únicamente el botón BYPASS del frontal y sus etiquetas; se mantiene el parámetro de bypass del host para compatibilidad. DSP sin cambios.
 
 Frontal final 1.0.1: retirados también FADE, EXT SC y SC Hz/MIX/TRIM/RATE; permanecen cinco mandos, POWER y METER. Parámetros conservados para sesiones existentes.
+
+## Versión 1.1.0: FIX
+
+Igualador RMS de salida respecto a la entrada original, situado donde estaba BYPASS. No modifica la señal que entra al compresor. Apagado por defecto; parámetro añadido al final para conservar los índices anteriores.
+
+Pruebas nuevas con seno de 997 Hz a amplitudes 0.05 y 0.5, 44.1 y 96 kHz; incluyen compensación de Make-Up y Trim, conservación de balance L/R, reducción de ganancia idéntica con FIX activado/desactivado, guardado de FIX, silencio exacto y POWER apagado. Al desactivar FIX se recupera exactamente la salida DSP de referencia tras la transición. Error RMS medido entre los segundos 7 y 9: +0.0256 / −0.0208 dB a 44.1 kHz y +0.0644 / −0.0646 dB a 96 kHz. Todos los errores están por debajo de 0.1 dB. No se afirma igualación perceptual LUFS ni ausencia de variaciones con música; la compensación RMS necesita estabilización.

@@ -10,7 +10,7 @@ Compresor de bus VCA original basado en el frontal vectorial de [FET67](https://
 
 ## Controles
 
-El frontal contiene únicamente Threshold −15…+15 dBu, Make-Up −5…+15 dB, Attack 0.1/0.3/1/3/10/30 ms, Release 0.1/0.3/0.6/1.2 s/Auto y Ratio 2/4/10. POWER enciende/apaga el procesamiento y METER alterna GR/OUT. Sin modo Analog, saturación ni ruido añadido. Doble clic restaura el valor inicial y el popup indica el valor exacto.
+El frontal contiene únicamente Threshold −15…+15 dBu, Make-Up −5…+15 dB, Attack 0.1/0.3/1/3/10/30 ms, Release 0.1/0.3/0.6/1.2 s/Auto y Ratio 2/4/10. POWER enciende/apaga el procesamiento, METER alterna GR/OUT y FIX iguala automáticamente el RMS de salida al RMS original de entrada. Sin modo Analog, saturación ni ruido añadido. Doble clic restaura el valor inicial y el popup indica el valor exacto.
 
 Se han retirado del frontal BYPASS, FADE, EXT SC y la fila SC Hz / MIX / TRIM / RATE. Los parámetros internos se conservan para compatibilidad con sesiones y automatización anteriores; en un estado nuevo están neutros: SC Off, Mix 100%, Trim 0 dB, Fade Off y detector interno. El bypass del DAW sigue disponible.
 
@@ -35,3 +35,9 @@ ctest --test-dir build -C Release --output-on-failure
 ```
 
 Pruebas offline incluidas en Tests. No se ha validado una matriz de DAWs ni se ha realizado comparación auditiva. La medición de referencia incluida cubre una curva estática y una traza de transitorio, no todos los ajustes. Las constantes nominales no garantizan transitorios idénticos a hardware u otros plugins.
+
+## FIX — comparación al mismo volumen
+
+FIX se encuentra en la antigua posición de BYPASS. Apagado por defecto. Compensa únicamente la ganancia de salida para igualar el RMS de la señal original de entrada: no normaliza ni modifica la entrada, el umbral, el detector ni la reducción de ganancia. Así permite comparar con POWER apagado o con el bypass del DAW sin favorecer la opción más fuerte.
+
+Se utiliza RMS sin ponderación, con integración exponencial de 400 ms, adaptación de ganancia de 750 ms y transición de encendido/apagado de 50 ms. La referencia es el canal con mayor RMS, compartiendo la misma corrección entre L/R para conservar el balance estéreo. Ajuste máximo ±24 dB; por debajo de −70 dBFS RMS de entrada o salida se congela la corrección para evitar amplificar silencios. La igualación tarda unos segundos en estabilizarse y aproxima volumen RMS, no sonoridad perceptual LUFS. No añade ruido, saturación, limitador ni latencia. Make-Up y Trim quedan compensados por FIX; desactívalo para juzgar su cambio de volumen. El fade heredado se aplica después de FIX.

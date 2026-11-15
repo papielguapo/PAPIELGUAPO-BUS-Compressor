@@ -41,11 +41,14 @@ private:
     };
     std::array<HighPass, 2> sideHP;
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
-        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC;
-    juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz;
+        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix;
+    juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend;
     double rate = 44100;
     float envelope = 0, slowEnvelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
     float meterRelease = 0, rmsPole = 0;
+    double fixInputEnergy = 0, fixOutputEnergy = 0;
+    std::array<double,2> fixInputChannelEnergy{}, fixOutputChannelEnergy{};
+    float fixPostDb = 0, fixMeasurePole = 0, fixGainPole = 0;
     bool wasBypassed = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VCASSLProcessor)
 };
