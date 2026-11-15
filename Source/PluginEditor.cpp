@@ -131,7 +131,7 @@ void FaceplateComponent::resized()
 {
     constexpr int centres[]{374,511,649,787,924};
     for(size_t i=0;i<5;++i)knobs[i].setBounds(centres[i]-38,80,76,76);
-    switches[0].setBounds(204,137,50,36);
+    switches[0].setBounds(1299,135,50,36);
     switches[1].setBounds(1169,135,50,36);
 }
 void FaceplateComponent::timerCallback()
@@ -200,7 +200,8 @@ void FaceplateComponent::paint(juce::Graphics& g)
     g.setColour(colour(0xffc6cccf));g.fillRect(68.0f,132.0f,95.0f,1.8f);
     lamp(g,{206,32,60,60},processor.apvts.getRawParameterValue("power")->load()>0.5f);
     g.setColour(colour(0xff171c1f));text(g,"POWER",197,102,78,18,14);
-    text(g,"ON",176,145,35,17,11);text(g,"OFF",258,145,35,17,11);
+    text(g,"ON",1280,145,30,15,10);text(g,"OFF",1349,145,35,15,10);
+    text(g,"POWER",1288,171,82,18,11);
     constexpr float centres[]{374,511,649,787,924};
     const char* titles[]{"THRESHOLD","MAKE-UP","ATTACK","RELEASE","RATIO"};
     for(int i=0;i<5;++i)
