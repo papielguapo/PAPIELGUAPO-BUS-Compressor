@@ -22,7 +22,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout VCASSLProcessor::makeParamet
  f("scFilter","SC Filter (0=Off, 21-500 Hz)",0,500,0,1); f("mix","Mix (%)",0,100,100,0.1f);
  f("trim","Trim (dB)",-18,18,0); f("fadeRate","Fade duration (s)",1,60,10,0.1f);
  b("fade","Fade Out",false); b("externalSC","External Sidechain",false);
- b("meterMode","Meter Output",false); b("bypass","Bypass",false); b("fix","FIX Level Match",false); b("ki","KI Harmonics",false); return p;
+ b("meterMode","Meter Output",false); b("bypass","Bypass",false); b("fix","FIX Level Match",false); b("ki","Legacy KI (integrated)",true); b("scEnabled","SC Filter 80 Hz",false); return p;
 }
 VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("Input",juce::AudioChannelSet::stereo(),true).withOutput("Output",juce::AudioChannelSet::stereo(),true).withInput("Sidechain",juce::AudioChannelSet::stereo(),false)),apvts(*this,nullptr,"VCASSL",makeParameters()) {
  power=apvts.getRawParameterValue("power");
@@ -39,7 +39,7 @@ VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("I
  fadeRate=apvts.getRawParameterValue("fadeRate");
  externalSC=apvts.getRawParameterValue("externalSC");
  fix=apvts.getRawParameterValue("fix");
- ki=apvts.getRawParameterValue("ki");
+ scEnabled=apvts.getRawParameterValue("scEnabled");
 }
 bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
  const auto main=l.getMainInputChannelSet(); const auto sc=l.getChannelSet(true,1);
@@ -49,7 +49,6 @@ bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
 void VCASSLProcessor::prepareToPlay(double sr,int) {
  rate=juce::jmax(8000.0,sr);
  for(auto* s:{&thresholdDb,&makeupGain,&trimGain,&wet,&enabled,&scHz}) s->reset(rate,0.02);
- kiBlend.reset(rate,0.02);
  kiReleasePole=static_cast<float>(std::exp(-1.0/(rate*0.08)));
  for(auto& filters:kiHighPass){filters[0].prepare(rate,0.54119610);filters[1].prepare(rate,1.30656296);}
  fixBlend.reset(rate,0.05);
@@ -58,13 +57,13 @@ void VCASSLProcessor::prepareToPlay(double sr,int) {
  meterRelease=static_cast<float>(std::exp(-1.0/(rate*0.25))); rmsPole=static_cast<float>(std::exp(-1.0/(rate*0.3))); reset();
 }
 void VCASSLProcessor::reset() {
- kiPeak=0;kiBlend.setCurrentAndTargetValue(ki->load()>0.5f?1.f:0.f);for(auto& filters:kiHighPass)for(auto& f:filters)f.clear();
+ kiPeak=0;for(auto& filters:kiHighPass)for(auto& f:filters)f.clear();
  fixInputChannelEnergy.fill(0);fixOutputChannelEnergy.fill(0);fixInputEnergy=fixOutputEnergy=0;fixPostDb=0;fixBlend.setCurrentAndTargetValue(fix->load()>0.5f?1.f:0.f);
  for(auto& h:sideHP) h.clear(); envelope=slowEnvelope=rms=grMeter=0; fadeGain=fade->load()>0.5f?0.f:1.f;
  thresholdDb.setCurrentAndTargetValue(threshold->load()); makeupGain.setCurrentAndTargetValue(gain(makeup->load()));
  trimGain.setCurrentAndTargetValue(gain(trim->load())); wet.setCurrentAndTargetValue(mix->load()/100.f);
  enabled.setCurrentAndTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);
- scHz.setCurrentAndTargetValue(scFilter->load()); currentGrDb.store(0);currentOutDb.store(-100);wasBypassed=false;
+ scHz.setCurrentAndTargetValue(scEnabled->load()>0.5f?80.f:0.f); currentGrDb.store(0);currentOutDb.store(-100);wasBypassed=false;
 }
 void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBuffer& midi) {
  juce::ScopedNoDenormals guard; midi.clear(); if(wasBypassed) reset();
@@ -72,12 +71,11 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
  auto side=getBusBuffer(buffer,true,1);
  const bool ext=externalSC->load()>0.5f&&side.getNumChannels()>0;
  thresholdDb.setTargetValue(threshold->load()); makeupGain.setTargetValue(gain(makeup->load()));trimGain.setTargetValue(gain(trim->load()));
- wet.setTargetValue(mix->load()/100.f);enabled.setTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);scHz.setTargetValue(scFilter->load());
+ wet.setTargetValue(mix->load()/100.f);enabled.setTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);scHz.setTargetValue(scEnabled->load()>0.5f?80.f:0.f);
  const int ai=juce::jlimit(0,5,juce::roundToInt(attack->load())),ri=juce::jlimit(0,4,juce::roundToInt(release->load()));
  const float r=ratios[juce::jlimit(0,2,juce::roundToInt(ratio->load()))];
  const float ac=static_cast<float>(std::exp(-1.0/(rate*attacks[ai])));
  const float slowCharge=static_cast<float>(std::exp(-1.0/(rate*0.4)));
- kiBlend.setTargetValue(ki->load()>0.5f?1.f:0.f);
  fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
  const float fadeStep=1.f/static_cast<float>(rate*fadeRate->load());
  for(int i=0;i<b.getNumSamples();++i) {
@@ -104,14 +102,15 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   const float mg=makeupGain.getNextValue(),tg=trimGain.getNextValue(),w=wet.getNextValue(),on=enabled.getNextValue();
   const float inputPeak=juce::jmax(std::abs(dry[0]),n==2?std::abs(dry[1]):0.f);
   kiPeak=juce::jmax(inputPeak,kiPeak*kiReleasePole);
-  const float kiWet=kiBlend.getNextValue(),compressionGain=gain(-envelope);
+  const float compressionGain=gain(-envelope);
   // Same bounded, even-harmonic transfer and GR-dependent strength as PWM TONE BOY KI.
-  const float k2=(0.008f+0.012f*(1-compressionGain))*juce::jlimit(0.f,1.f,kiPeak*kiPeak*196.f);
+  // +25 dB on the even component only; unity clean term, no noise source.
+  const float k2=17.7827941f*(0.008f+0.012f*(1-compressionGain))*juce::jlimit(0.f,1.f,kiPeak*kiPeak*196.f);
   float compressed[2]{};fixOutputEnergy=0;
   for(int ch=0;ch<n;++ch){const float clean=dry[ch]*compressionGain;
    const float square=clean*clean,triode=clean+k2*square/(1.f+0.25f*square);
    auto& filters=kiHighPass[static_cast<size_t>(ch)];const float coloured=filters[1].tick(filters[0].tick(triode));
-   const float x=(kiWet<=0?clean:clean+kiWet*(coloured-clean))*mg;
+   const float x=coloured*mg;
    compressed[ch]=(dry[ch]+w*(x-dry[ch]))*tg;auto& e=fixOutputChannelEnergy[static_cast<size_t>(ch)];
    e=fixMeasurePole*e+(1-fixMeasurePole)*static_cast<double>(compressed[ch])*compressed[ch];fixOutputEnergy=juce::jmax(fixOutputEnergy,e);}
   if(fixInputEnergy>fixGateEnergy&&fixOutputEnergy>fixGateEnergy){

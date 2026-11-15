@@ -53,8 +53,8 @@ private:
     std::array<std::array<KiHighPass,2>,2> kiHighPass;
 
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
-        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *ki;
-    juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend, kiBlend;
+        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled;
+    juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend;
     double rate = 44100;
     float envelope = 0, slowEnvelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
     float meterRelease = 0, rmsPole = 0;

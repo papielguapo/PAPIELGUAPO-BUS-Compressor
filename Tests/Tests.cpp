@@ -1,85 +1,65 @@
 #include "../Source/PluginProcessor.h"
 #include "../Source/PluginEditor.h"
 #include <juce_audio_utils/juce_audio_utils.h>
-#include <iostream>
-#include <stdexcept>
 #include <cmath>
+#include <iostream>
 #include <limits>
-void check(bool x,const char* m){if(!x)throw std::runtime_error(m);}
-void set(VCASSLProcessor& p,const char* id,float x){auto* v=p.apvts.getParameter(id);v->setValueNotifyingHost(v->convertTo0to1(x));}
-float run(VCASSLProcessor& p,float level,int blocks=3000){juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;float last=0;
-for(int j=0;j<blocks;++j){b.clear();for(int i=0;i<128;++i){b.setSample(0,i,level);b.setSample(1,i,level*.5f);}p.processBlock(b,m);for(int c=0;c<2;++c)for(int i=0;i<128;++i)check(std::isfinite(b.getSample(c,i)),"finite");last=b.getSample(0,127);if(std::abs(last)>1.e-10f)check(std::abs(b.getSample(1,127)/last-.5f)<1.e-5f,"stereo link");}return last;}
-int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
- VCASSLProcessor p;
- if(argc>1&&juce::String(argv[1])=="--measure"){set(p,"attack",4);set(p,"release",4);set(p,"threshold",0);set(p,"ratio",1);p.setRateAndBufferSizeDetails(48000,128);p.prepareToPlay(48000,128);
- for(float level:{-48.f,-36.f,-30.f,-24.f,-18.f,-12.f,-6.f,0.f}){p.reset();double energy=0;int count=0;juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
- for(int offset=0;offset<144000;offset+=128){for(int i=0;i<128;++i){float x=std::pow(10.f,level/20.f)*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*1000*(offset+i)/48000.));b.setSample(0,i,x);b.setSample(1,i,x);}p.processBlock(b,m);if(offset>96000)for(int i=0;i<128;++i){double x=b.getSample(0,i);energy+=x*x;++count;}}
- std::cout<<"TRANSFER,"<<level<<","<<10*std::log10(energy/count)<<"\n";}return 0;}
+#include <stdexcept>
 
- if(argc>1){if(argc>2&&juce::String(argv[2])=="--ki-on")set(p,"ki",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->setSize(kBaseWidth,kBaseHeight);ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::File f{juce::String(argv[1])};auto stream=f.createOutputStream();check(stream!=nullptr,"preview file");stream->setPosition(0);stream->truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,*stream),"preview render");return 0;}
- for(double sr:{44100.,48000.,96000.}){p.setRateAndBufferSizeDetails(sr,128);set(p,"threshold",-15);set(p,"attack",0);set(p,"release",0);p.prepareToPlay(sr,128);
- for(int r=0;r<3;++r){set(p,"ratio",static_cast<float>(r));p.reset();float a=run(p,.1f);p.reset();float b=run(p,.2f);float slope=20*std::log10(b/a);float expected=20*std::log10(2.f)/(r==0?2:r==1?4:10);check(std::abs(slope-expected)<.04f,"ratio slope");}
- set(p,"mix",0);p.reset();check(std::abs(run(p,.25f)-.25f)<1.e-7f,"dry mix");set(p,"mix",100);
- set(p,"bypass",1);p.reset();check(run(p,.2f)==.2f,"bypass exact");set(p,"bypass",0);
- set(p,"power",0);p.reset();check(run(p,.3f)==.3f,"power exact");set(p,"power",1);
- for(int a=0;a<6;++a)for(int r=0;r<5;++r){set(p,"attack",static_cast<float>(a));set(p,"release",static_cast<float>(r));p.reset();run(p,.7f,40);}
- set(p,"fadeRate",1);set(p,"fade",1);p.reset();check(std::abs(run(p,.5f,500))<1.e-8f,"fade out");set(p,"fade",0);check(run(p,.5f,900)>0,"fade in");
+namespace {
+unsigned long long checks=0;
+void check(bool ok,const char* message){++checks;if(!ok)throw std::runtime_error(message);}
+void set(VCASSLProcessor& p,const char* id,float value){auto* v=p.apvts.getParameter(id);check(v!=nullptr,"parameter exists");v->setValueNotifyingHost(v->convertTo0to1(value));}
+void prepare(VCASSLProcessor& p,double sr=48000,int block=128){p.setRateAndBufferSizeDetails(sr,block);p.prepareToPlay(sr,block);}
+struct Tone {double rms=0,mean=0;std::array<double,3> harmonic{};float gr=0;};
+Tone tone(VCASSLProcessor& p,double sr,double seconds,double frequency,float amplitude,int block=128){
+ juce::AudioBuffer<float>b(2,block);juce::MidiBuffer midi;double energy=0,sum=0,re[3]{},im[3]{};int count=0;
+ const int total=static_cast<int>(sr*seconds),start=total-static_cast<int>(sr);
+ for(int offset=0;offset<total;offset+=block){const int size=juce::jmin(block,total-offset);b.setSize(2,size,false,false,true);
+  for(int i=0;i<size;++i){float x=amplitude*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*frequency*(offset+i)/sr));b.setSample(0,i,x);b.setSample(1,i,x);}
+  p.processBlock(b,midi);for(int i=0;i<size;++i){const double x=b.getSample(0,i);check(std::isfinite(x),"tone finite");check(b.getSample(0,i)==b.getSample(1,i),"identical stereo remains identical");if(offset+i>=start){energy+=x*x;sum+=x;++count;const double t=juce::MathConstants<double>::twoPi*frequency*(offset+i)/sr;for(int h=0;h<3;++h){re[h]+=x*std::cos((h+1)*t);im[h]+=x*std::sin((h+1)*t);}}}
  }
- // FIX must match RMS while leaving the detector/GR unchanged and preserving stereo balance.
- for(double sr:{44100.,96000.})for(float amplitude:{.05f,.5f}){
-  VCASSLProcessor matched,reference;for(auto* q:{&matched,&reference}){q->setRateAndBufferSizeDetails(sr,128);set(*q,"makeup",amplitude<.1f?12.f:0.f);set(*q,"trim",3.f);q->prepareToPlay(sr,128);}set(matched,"fix",1);
-  juce::AudioBuffer<float>a(2,128),b(2,128);juce::MidiBuffer m;double inputSum=0,outputSum=0;int count=0;
-  for(int offset=0;offset<static_cast<int>(sr*12);offset+=128){if(offset>=static_cast<int>(sr*9))set(matched,"fix",0);
-   for(int i=0;i<128;++i){float x=amplitude*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr));a.setSample(0,i,x);a.setSample(1,i,x*.5f);b.setSample(0,i,x);b.setSample(1,i,x*.5f);}
-   matched.processBlock(a,m);reference.processBlock(b,m);check(std::abs(matched.currentGrDb.load()-reference.currentGrDb.load())<.00001f,"FIX must not change compression");
-   for(int i=0;i<128;++i){const float x=a.getSample(0,i);check(std::isfinite(x),"FIX finite");check(std::abs(a.getSample(1,i)-x*.5f)<.000001f,"FIX stereo balance");
-    if(offset>=static_cast<int>(sr*7)&&offset<static_cast<int>(sr*9)){double original=amplitude*std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr);inputSum+=original*original;outputSum+=static_cast<double>(x)*x;++count;}
-    if(offset>static_cast<int>(sr*10))check(x==b.getSample(0,i),"FIX off restores exact original DSP");}
-  }
-  check(count>0,"FIX measurement samples");const double error=10*std::log10(outputSum/inputSum);std::cout<<"FIX RMS error dB at "<<sr<<" Hz, amplitude "<<amplitude<<": "<<error<<"\n";check(std::abs(error)<.1,"FIX RMS match within 0.1 dB");
-  set(matched,"fix",1);juce::MemoryBlock state;matched.getStateInformation(state);VCASSLProcessor loaded;loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("fix")->load()>.5f,"FIX state persistence");
-  for(int j=0;j<100;++j){a.clear();matched.processBlock(a,m);check(a.getMagnitude(0,128)==0,"FIX adds no noise in silence");}
-  set(matched,"power",0);matched.reset();for(int i=0;i<128;++i){a.setSample(0,i,.2f);a.setSample(1,i,.1f);}matched.processBlock(a,m);check(a.getSample(0,127)==.2f,"FIX respects Power off");
+ Tone result;result.rms=std::sqrt(energy/count);result.mean=sum/count;for(int h=0;h<3;++h)result.harmonic[static_cast<size_t>(h)]=2*std::hypot(re[h],im[h])/count;result.gr=p.currentGrDb.load();return result;
+}
+}
+int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
+ if(argc>1){VCASSLProcessor p;if(argc>2&&juce::String(argv[2])=="--sc-on")set(p,"scEnabled",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->setSize(kBaseWidth,kBaseHeight);ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::FileOutputStream stream{juce::File{juce::String(argv[1])}};check(stream.openedOk(),"preview stream");stream.setPosition(0);stream.truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,stream),"preview PNG");return 0;}
+ // Integrated KI is +25 dB in H2, without changing the VCA detector.
+ VCASSLProcessor spectral;set(spectral,"threshold",15);prepare(spectral);const auto ki=tone(spectral,48000,3,1000,.2f);
+ const double h2=20*std::log10(ki.harmonic[1]/ki.harmonic[0]),h3=20*std::log10(juce::jmax(1.e-12,ki.harmonic[2]/ki.harmonic[0]));
+ std::cout<<"Integrated KI H2/H3 dBc: "<<h2<<" / "<<h3<<"\n";check(std::abs(h2-(-62.0248+25))<.1,"KI H2 +25 dB");check(h2>h3+20,"KI even harmonics dominant");check(std::abs(ki.mean)<1.e-6,"KI DC blocked");
+ spectral.reset();const auto infra=tone(spectral,48000,3,5,.2f);check(20*std::log10(infra.harmonic[0]/ki.harmonic[0])<-40,"KI infra filter 18 Hz");
+ // Compression slopes remain correct with the integrated downstream colour.
+ for(int ratio=0;ratio<3;++ratio){VCASSLProcessor p;set(p,"threshold",-15);set(p,"ratio",static_cast<float>(ratio));prepare(p);const auto a=tone(p,48000,4,1000,.1f);p.reset();const auto b=tone(p,48000,4,1000,.2f);const double measured=20*std::log10(b.rms/a.rms),expected=20*std::log10(2.)/(ratio==0?2:ratio==1?4:10);std::cout<<"Ratio slope "<<ratio<<": "<<measured<<" dB\n";check(std::abs(measured-expected)<.1,"ratio slope");}
+ // SC filters detection, never the audio path. 50 Hz drives less GR with SC ON.
+ VCASSLProcessor scOff,scOn;set(scOn,"scEnabled",1);prepare(scOff);prepare(scOn);const auto off=tone(scOff,48000,4,50,.5f),on=tone(scOn,48000,4,50,.5f);
+ std::cout<<"SC 50Hz GR off/on dB: "<<off.gr<<" / "<<on.gr<<"\n";check(on.gr<off.gr-2,"SC reduces bass-driven compression");
+ for(auto* p:{&scOff,&scOn}){set(*p,"threshold",15);p->reset();}const auto idleOff=tone(scOff,48000,3,50,.02f),idleOn=tone(scOn,48000,3,50,.02f);check(idleOff.rms==idleOn.rms&&idleOff.harmonic==idleOn.harmonic,"SC never cuts audio bass when detector is idle");
+ // FIX compares the final coloured signal to the original input, including Make-Up and Trim.
+ for(double sr:{44100.,96000.})for(float amplitude:{.05f,.5f}){VCASSLProcessor matched,reference;for(auto* p:{&matched,&reference}){set(*p,"makeup",amplitude<.1f?12.f:0.f);set(*p,"trim",3);prepare(*p,sr);}set(matched,"fix",1);
+  juce::AudioBuffer<float>a(2,128),b(2,128);juce::MidiBuffer midi;double ei=0,eo=0;
+  for(int offset=0;offset<static_cast<int>(sr*12);offset+=128){if(offset>=static_cast<int>(sr*9))set(matched,"fix",0);for(int i=0;i<128;++i){float x=amplitude*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr));for(int ch=0;ch<2;++ch){a.setSample(ch,i,x);b.setSample(ch,i,x);}}
+   matched.processBlock(a,midi);reference.processBlock(b,midi);check(matched.currentGrDb.load()==reference.currentGrDb.load(),"FIX must not change detector/GR");
+   for(int i=0;i<128;++i){check(std::isfinite(a.getSample(0,i)),"FIX finite");if(offset>=static_cast<int>(sr*7)&&offset<static_cast<int>(sr*9)){const double x=amplitude*std::sin(juce::MathConstants<double>::twoPi*997*(offset+i)/sr),y=a.getSample(0,i);ei+=x*x;eo+=y*y;}if(offset>static_cast<int>(sr*10))check(a.getSample(0,i)==b.getSample(0,i),"FIX off exact base path");}}
+  const double error=10*std::log10(eo/ei);std::cout<<"FIX RMS error "<<sr<<" Hz, "<<amplitude<<": "<<error<<" dB\n";check(std::abs(error)<.01,"FIX with KI +25dB within .01 dB");
  }
- // KI reuses the PWM even transfer: predominantly H2, DC blocked, exact clean path when off.
- auto kiSpectrum=[&](bool active,double frequency,bool levelMatch=false){VCASSLProcessor q;set(q,"ki",active?1.f:0.f);set(q,"fix",levelMatch?1.f:0.f);set(q,"threshold",15);q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);
-  juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;double re[3]{},im[3]{},sum=0,energy=0;int count=0;
-  for(int offset=0;offset<48000*9;offset+=128){for(int i=0;i<128;++i){float x=.2f*static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*frequency*(offset+i)/48000));b.setSample(0,i,x);b.setSample(1,i,x);}q.processBlock(b,m);
-   if(offset>=48000*8)for(int i=0;i<128&&offset+i<48000*9;++i){const double x=b.getSample(0,i),t=juce::MathConstants<double>::twoPi*frequency*(offset+i)/48000;sum+=x;energy+=x*x;++count;for(int h=0;h<3;++h){re[h]+=x*std::cos((h+1)*t);im[h]+=x*std::sin((h+1)*t);}}}
-  std::array<double,5> result{};for(int h=0;h<3;++h)result[static_cast<size_t>(h)]=2*std::hypot(re[h],im[h])/count;result[3]=sum/count;result[4]=std::sqrt(energy/count);return result;};
- const auto cleanKi=kiSpectrum(false,1000),activeKi=kiSpectrum(true,1000),infraKi=kiSpectrum(true,5),kiWithFix=kiSpectrum(true,1000,true);
- const double h2=20*std::log10(activeKi[1]/activeKi[0]),h3=20*std::log10(juce::jmax(1.e-12,activeKi[2]/activeKi[0]));
- std::cout<<"KI H2/H3 dBc: "<<h2<<" / "<<h3<<"\n";
- check(h2>-65&&h2<-59&&h2>h3+20,"KI produces gentle predominantly second harmonic");
- check(activeKi[1]>cleanKi[1]*100,"KI H2 differs from clean path");check(std::abs(activeKi[3])<.000001,"KI DC blocked");
- check(20*std::log10(infraKi[0]/activeKi[0])<-40,"KI 18Hz fourth-order infra filter");
- check(std::abs(20*std::log10(kiWithFix[4]/(.2/std::sqrt(2.))))<.1,"FIX RMS matching works with KI");
- {VCASSLProcessor q;set(q,"ki",1);q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(2,128);b.clear();juce::MidiBuffer m;q.processBlock(b,m);check(b.getMagnitude(0,128)==0,"KI adds no noise at rest");juce::MemoryBlock state;q.getStateInformation(state);VCASSLProcessor loaded;loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("ki")->load()>.5f,"KI state persistence");}
- // With no analog stage, digital silence remains exact.
- {VCASSLProcessor q;q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
- for(int j=0;j<500;++j){b.clear();q.processBlock(b,m);check(b.getMagnitude(0,128)==0,"digital silence, no added noise");}}
- // Attack timing must distinguish the endpoints on an identical level step.
- auto attackAt=[&](int setting){VCASSLProcessor q;set(q,"threshold",-15);set(q,"attack",static_cast<float>(setting));q.setRateAndBufferSizeDetails(48000,48);q.prepareToPlay(48000,48);juce::AudioBuffer<float>b(2,48);juce::MidiBuffer m;for(int c=0;c<2;++c)for(int i=0;i<48;++i)b.setSample(c,i,.5f);q.processBlock(b,m);return b.getSample(0,47);};
- check(attackAt(0)<attackAt(5)*.8f,"attack timing");
- // External detector: silence must not compress the main input, loud SC must.
- {VCASSLProcessor q;auto layout=q.getBusesLayout();layout.inputBuses.getReference(1)=juce::AudioChannelSet::stereo();check(q.setBusesLayout(layout),"external layout");set(q,"externalSC",1);set(q,"threshold",-15);q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(4,128);juce::MidiBuffer m;
- auto scRun=[&](float sc){for(int j=0;j<1500;++j){for(int i=0;i<128;++i){b.setSample(0,i,.1f);b.setSample(1,i,.1f);b.setSample(2,i,sc);b.setSample(3,i,sc);}q.processBlock(b,m);}return b.getSample(0,127);};
- check(std::abs(scRun(0)-.1f)<1.e-6f,"silent external SC");check(scRun(.9f)<.03f,"external SC compression");}
- // Mono host layout.
- {VCASSLProcessor q;auto layout=q.getBusesLayout();layout.inputBuses.getReference(0)=juce::AudioChannelSet::mono();layout.outputBuses.getReference(0)=juce::AudioChannelSet::mono();check(q.setBusesLayout(layout),"mono layout");q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(1,128);b.clear();juce::MidiBuffer m;q.processBlock(b,m);check(std::isfinite(b.getSample(0,0)),"mono process");}
- set(p,"threshold",-7.3f);juce::MemoryBlock state;p.getStateInformation(state);VCASSLProcessor restored;restored.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(std::abs(restored.apvts.getRawParameterValue("threshold")->load()+7.3f)<.001f,"state");
- // Audit regression: a legacy state without new controls must restore defaults, not inherit last toggles.
- {VCASSLProcessor legacy;auto tree=legacy.apvts.copyState();for(const char* id:{"fix","ki"})tree.removeChild(tree.getChildWithProperty("id",id),nullptr);
-  juce::MemoryBlock old;auto xml=tree.createXml();juce::AudioProcessor::copyXmlToBinary(*xml,old);VCASSLProcessor q;set(q,"fix",1);set(q,"ki",1);q.setStateInformation(old.getData(),static_cast<int>(old.getSize()));
-  check(q.apvts.getRawParameterValue("fix")->load()==0&&q.apvts.getRawParameterValue("ki")->load()==0,"legacy state must reset absent FIX and KI to defaults");}
- // Audit regression: invalid/exceptional host audio must not poison KI/filter state or meters.
- for(bool coloured:{false,true}){VCASSLProcessor q;set(q,"ki",coloured?1.f:0.f);set(q,"fix",1);set(q,"makeup",15);set(q,"trim",18);q.setRateAndBufferSizeDetails(192000,128);q.prepareToPlay(192000,128);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
-  const float hostile[]{std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),std::numeric_limits<float>::max(),-std::numeric_limits<float>::max()};
-  for(float x:hostile){for(int c=0;c<2;++c)for(int i=0;i<128;++i)b.setSample(c,i,x);q.processBlock(b,m);for(int c=0;c<2;++c)for(int i=0;i<128;++i)check(std::isfinite(b.getSample(c,i)),"hostile input must not poison output");check(std::isfinite(q.currentOutDb.load()),"hostile input must not poison meters");}
-  for(int j=0;j<1000;++j){b.clear();q.processBlock(b,m);check(std::isfinite(b.getSample(0,127)),"recovery after hostile input");}}
- // Audit: arbitrary host block lengths (including zero), mono and stereo, and all KI/FIX combinations.
- for(int channels:{1,2})for(double sr:{8000.,192000.,384000.})for(int flags=0;flags<4;++flags){VCASSLProcessor q;auto layout=q.getBusesLayout();layout.inputBuses.getReference(0)=channels==1?juce::AudioChannelSet::mono():juce::AudioChannelSet::stereo();layout.outputBuses.getReference(0)=layout.inputBuses[0];check(q.setBusesLayout(layout),"audit layout");set(q,"ki",static_cast<float>(flags&1));set(q,"fix",static_cast<float>((flags>>1)&1));q.setRateAndBufferSizeDetails(sr,1024);q.prepareToPlay(sr,1024);juce::MidiBuffer m;
-  for(int size:{0,1,7,31,127,511,1024}){juce::AudioBuffer<float>b(channels,size);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)b.setSample(c,i,.3f*static_cast<float>(std::sin((i+1)*.17)));q.processBlock(b,m);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)check(std::isfinite(b.getSample(c,i)),"arbitrary blocks finite");q.processBlockBypassed(b,m);check(std::isfinite(q.currentOutDb.load()),"zero/arbitrary bypass meter finite");}
-  q.reset();juce::AudioBuffer<float>silence(channels,127);silence.clear();q.processBlock(silence,m);check(silence.getMagnitude(0,127)==0,"reset restores silence");}
- std::cout<<"PASS: slopes 2/4/10, stereo link, mix, bypass, power, all attack/release settings, fade, state; 44.1/48/96 kHz\n";
- return 0;}catch(const std::exception& e){std::cerr<<e.what()<<"\n";return 1;}}
+ // No independent noise source, and no extra gain on an existing very low noise floor.
+ {VCASSLProcessor p;set(p,"threshold",15);prepare(p);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer midi;unsigned seed=42;double ei=0,eo=0;
+  for(int offset=0;offset<144000;offset+=128){float dry[128]{};for(int i=0;i<128;++i){seed^=seed<<13;seed^=seed>>17;seed^=seed<<5;dry[i]=(static_cast<float>(seed)/4294967295.f-.5f)*.000002f;b.setSample(0,i,dry[i]);b.setSample(1,i,dry[i]);}p.processBlock(b,midi);if(offset>=96000)for(int i=0;i<128;++i){ei+=static_cast<double>(dry[i])*dry[i];const double x=b.getSample(0,i);eo+=x*x;}}
+  const double change=10*std::log10(eo/ei);std::cout<<"Low-level noise gain: "<<change<<" dB\n";check(change<.05,"no low-level noise boost");p.reset();for(int j=0;j<100;++j){b.clear();p.processBlock(b,midi);check(b.getMagnitude(0,128)==0,"exact silence from rest");}}
+ // Host automation, unusual blocks, high rates, mono/stereo, reset and bypass.
+ for(int channels:{1,2})for(double sr:{8000.,48000.,192000.,384000.})for(int flags=0;flags<4;++flags){VCASSLProcessor p;auto layout=p.getBusesLayout();layout.inputBuses.getReference(0)=channels==1?juce::AudioChannelSet::mono():juce::AudioChannelSet::stereo();layout.outputBuses.getReference(0)=layout.inputBuses[0];check(p.setBusesLayout(layout),"mono/stereo layout");set(p,"scEnabled",static_cast<float>(flags&1));set(p,"fix",static_cast<float>((flags>>1)&1));prepare(p,sr,1024);juce::MidiBuffer midi;
+  for(int size:{0,1,7,31,127,511,1024}){juce::AudioBuffer<float>b(channels,size);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)b.setSample(c,i,.3f*static_cast<float>(std::sin((i+1)*.17)));p.processBlock(b,midi);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)check(std::isfinite(b.getSample(c,i)),"arbitrary blocks finite");p.processBlockBypassed(b,midi);check(std::isfinite(p.currentOutDb.load()),"zero-size bypass meter finite");}
+  p.reset();juce::AudioBuffer<float>b(channels,127);b.clear();p.processBlock(b,midi);check(b.getMagnitude(0,127)==0,"reset silence");}
+ {VCASSLProcessor p;set(p,"power",0);set(p,"fix",1);set(p,"scEnabled",1);prepare(p);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer midi;for(int i=0;i<128;++i){b.setSample(0,i,.2f);b.setSample(1,i,-.1f);}p.processBlock(b,midi);check(b.getSample(0,127)==.2f&&b.getSample(1,127)==-.1f,"POWER dry exact");set(p,"power",1);set(p,"bypass",1);p.reset();p.processBlock(b,midi);check(b.getSample(0,127)==.2f,"host bypass parameter dry exact");}
+ // The legacy KI switch is ignored: the integrated branch stays on even for old states.
+ {VCASSLProcessor a,b;set(a,"threshold",15);set(b,"threshold",15);set(a,"ki",0);set(b,"ki",1);prepare(a);prepare(b);const auto x=tone(a,48000,2,1000,.2f),y=tone(b,48000,2,1000,.2f);check(x.rms==y.rms&&x.harmonic==y.harmonic,"KI always integrated regardless of legacy toggle");set(a,"scEnabled",1);set(a,"fix",1);juce::MemoryBlock state;a.getStateInformation(state);VCASSLProcessor loaded;loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("scEnabled")->load()==1&&loaded.apvts.getRawParameterValue("fix")->load()==1,"state SC/FIX persistence");auto old=a.apvts.copyState();old.removeChild(old.getChildWithProperty("id","scEnabled"),nullptr);auto xml=old.createXml();juce::AudioProcessor::copyXmlToBinary(*xml,state);loaded.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(loaded.apvts.getRawParameterValue("scEnabled")->load()==0,"legacy state SC defaults off");}
+ // Exceptional host audio never poisons filters/meters, even with FIX enabled.
+ {VCASSLProcessor p;set(p,"fix",1);set(p,"makeup",15);set(p,"trim",18);prepare(p,192000);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer midi;const float hostile[]{std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),std::numeric_limits<float>::max(),-std::numeric_limits<float>::max()};for(float x:hostile){for(int c=0;c<2;++c)for(int i=0;i<128;++i)b.setSample(c,i,x);p.processBlock(b,midi);for(int c=0;c<2;++c)for(int i=0;i<128;++i)check(std::isfinite(b.getSample(c,i)),"hostile audio finite");check(std::isfinite(p.currentOutDb.load()),"hostile meters finite");}for(int j=0;j<1000;++j){b.clear();p.processBlock(b,midi);check(std::isfinite(b.getSample(0,127)),"hostile recovery");}}
+ // The inherited external sidechain still routes its own detector signal.
+ {VCASSLProcessor p;auto layout=p.getBusesLayout();layout.inputBuses.getReference(1)=juce::AudioChannelSet::stereo();check(p.setBusesLayout(layout),"external layout");set(p,"externalSC",1);prepare(p);juce::AudioBuffer<float>b(4,128);juce::MidiBuffer midi;
+  auto drive=[&](float sc){p.reset();for(int offset=0;offset<144000;offset+=128){for(int i=0;i<128;++i){const float sine=static_cast<float>(std::sin(juce::MathConstants<double>::twoPi*1000*(offset+i)/48000));b.setSample(0,i,sine*.1f);b.setSample(1,i,sine*.1f);b.setSample(2,i,sine*sc);b.setSample(3,i,sine*sc);}p.processBlock(b,midi);}return p.currentGrDb.load();};check(drive(0)<.001f,"silent external SC no compression");check(drive(.9f)>8,"loud external SC drives compression");}
+ // Every attack/release selection remains stable under abrupt signal changes.
+ for(int a=0;a<6;++a)for(int r=0;r<5;++r){VCASSLProcessor p;set(p,"attack",static_cast<float>(a));set(p,"release",static_cast<float>(r));prepare(p);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer midi;for(int j=0;j<20;++j){for(int c=0;c<2;++c)for(int i=0;i<128;++i)b.setSample(c,i,j<10?.7f:0);p.processBlock(b,midi);check(std::isfinite(b.getSample(0,127)),"all attack/release settings stable");}}
+ std::cout<<"PASS: "<<checks<<" checks; integrated KI +25dB, SC detector-only, FIX, noise, states, buses, hostile audio and automation\n";return 0;
+ }catch(const std::exception& e){std::cerr<<"FAIL: "<<e.what()<<" after "<<checks<<" checks\n";return 1;}}

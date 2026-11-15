@@ -1,24 +1,29 @@
-Start testing: Nov 15 18:41 Hora estándar romance
+Start testing: Nov 15 18:55 Hora estándar romance
 ----------------------------------------------------------
 1/1 Testing: DSP
 1/1 Test: DSP
 Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
 Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-"DSP" start time: Nov 15 18:41 Hora estándar romance
+"DSP" start time: Nov 15 18:55 Hora estándar romance
 Output:
 ----------------------------------------------------------
-FIX RMS error dB at 44100 Hz, amplitude 0.05: 0.000462467
-FIX RMS error dB at 44100 Hz, amplitude 0.5: -0.000437691
-FIX RMS error dB at 96000 Hz, amplitude 0.05: 0.000462939
-FIX RMS error dB at 96000 Hz, amplitude 0.5: -0.000436763
-KI H2/H3 dBc: -62.0248 / -157.202
-PASS: slopes 2/4/10, stereo link, mix, bypass, power, all attack/release settings, fade, state; 44.1/48/96 kHz
+Integrated KI H2/H3 dBc: -37.0247 / -168.608
+Ratio slope 0: 2.97525 dB
+Ratio slope 1: 1.48963 dB
+Ratio slope 2: 0.614215 dB
+SC 50Hz GR off/on dB: 13.2608 / 9.00415
+FIX RMS error 44100 Hz, 0.05: 0.000452013 dB
+FIX RMS error 44100 Hz, 0.5: -0.000432039 dB
+FIX RMS error 96000 Hz, 0.05: 0.000462953 dB
+FIX RMS error 96000 Hz, 0.5: -0.000437085 dB
+Low-level noise gain: -0.0043171 dB
+PASS: 8648639 checks; integrated KI +25dB, SC detector-only, FIX, noise, states, buses, hostile audio and automation
 <end of output>
-Test time =   4.02 sec
+Test time =   2.16 sec
 ----------------------------------------------------------
 Test Passed.
-"DSP" end time: Nov 15 18:41 Hora estándar romance
-"DSP" time elapsed: 00:00:04
+"DSP" end time: Nov 15 18:55 Hora estándar romance
+"DSP" time elapsed: 00:00:02
 ----------------------------------------------------------
 
-End testing: Nov 15 18:41 Hora estándar romance
+End testing: Nov 15 18:55 Hora estándar romance

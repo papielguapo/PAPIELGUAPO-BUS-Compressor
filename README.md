@@ -1,32 +1,45 @@
-# VCA SSL — papielguapo
+# VCA SSL COMPRESSOR — papielguapo
 
 **Creador: [papielguapo](https://github.com/papielguapo)**
 
-![VCA SSL de papielguapo: frontal de aluminio y controles violetas](Preview.png)
+![VCA SSL COMPRESSOR — frontal actual](Preview.png)
 
-[Descargar VCA SSL para Windows x64 (VST3 + Standalone + código)](https://github.com/papielguapo/VCASSL/releases/latest)
+[Descargar para Windows x64: VST3, Standalone y código](https://github.com/papielguapo/VCASSL/releases/latest)
 
-Compresor de bus VCA original basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Conserva el panel de aluminio, mandos violetas, piloto, firma, tornillos, medidor y lienzo 1634 × 252. Cambian nombre, escalas y funciones; los controles adicionales son necesarios para cubrir la referencia.
+Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %.
 
-## Controles
+## Controles actuales — 1.3.0
 
-El frontal contiene únicamente Threshold −15…+15 dBu, Make-Up −5…+15 dB, Attack 0.1/0.3/1/3/10/30 ms, Release 0.1/0.3/0.6/1.2 s/Auto y Ratio 2/4/10. POWER enciende/apaga el procesamiento, METER alterna GR/OUT y FIX iguala automáticamente el RMS de salida al RMS original de entrada. KI, a la izquierda de METER, activa el color armónico y su piloto morado pequeño. Sin modo Analog ni ruido añadido. Doble clic restaura el valor inicial y el popup indica el valor exacto.
+- Threshold −15…+15 dB; Make-Up −5…+15 dB.
+- Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10.
+- POWER enciende/apaga el procesamiento; apagado entrega señal seca. El bypass del DAW también sigue disponible.
+- SC FILTER, a la izquierda de METER, activa un pasa-altos de 80 Hz **sólo en el detector**. Reduce la influencia del bombo/subgrave en la compresión sin ecualizar el audio. ON/OFF suavizado; piloto morado pequeño encendido en ON. Apagado por defecto.
+- METER alterna GR y OUT. OUT conserva la referencia RMS original: 0 = −18 dBFS RMS. No es un medidor true peak.
+- FIX iguala el RMS final de salida al RMS original de entrada para comparar al mismo volumen. No modifica el detector ni la señal de entrada. Apagado por defecto.
 
-Se han retirado del frontal BYPASS, FADE, EXT SC y la fila SC Hz / MIX / TRIM / RATE. Los parámetros internos se conservan para compatibilidad con sesiones y automatización anteriores; en un estado nuevo están neutros: SC Off, Mix 100%, Trim 0 dB, Fade Off y detector interno. El bypass del DAW sigue disponible.
+Doble clic restaura valores y el popup indica el ajuste. Sin botón Analog ni ruido generado.
 
-Referencia de rangos: [manual oficial Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). No incluye código, recursos ni presets de Waves. Modelo propio, sin afiliación ni certificación Waves/SSL. No se afirma equivalencia sonora 1:1. Auto, knee y autofade son implementaciones propias; se ha medido SSLComp Stereo V14.12 instalado para aproximar la calibración del detector, con Analog Off. El control Fade es de dos estados, sin el tercer estado de cancelación descrito en su manual.
+## KI integrado y siempre activo
 
-## DSP
+KI ya no tiene interruptor visible. Se integra siempre en la ruta procesada, con **+25 dB en el componente armónico** respecto a 1.2.1: `x + 17.7827941 * k2*x*x/(1 + 0.25*x*x)`, con `k2 = (0.008 + 0.012*(1-g)) * gate`. No se amplifica la señal limpia 25 dB ni se añade un generador de ruido. La intensidad cae a niveles de entrada muy bajos.
 
-Detector de pico feed-forward, enlace estéreo permanente y misma ganancia en ambos canales. Calibración del detector +24.1 dB respecto a dBFS pico, ajustada con senoidal de 1 kHz frente a SSLComp V14.12, threshold 0, ratio 4:1, ataque 10 ms y release Auto. Rodilla suave 6/3/1 dB para ratio 2/4/10. Attack y Release son constantes de tiempo exponenciales del control de ganancia; Auto depende de la historia del nivel. El filtro pasa-altos sólo afecta al detector. Sin limitador oculto, sin ganancia automática, sin latencia. Con KI apagado la etapa de ganancia es limpia. OUT conserva el medidor RMS original (0 = −18 dBFS RMS); GR conserva la escala LED original hasta 21 dB.
+La función armónica y el filtro infrasonoro Butterworth de cuarto orden a 18 Hz proceden de PWM TONE BOY, adaptados al VCA. Se aplican después de la reducción de ganancia y antes de Make-Up y FIX. El filtro de 18 Hz sí forma parte de la ruta de audio integrada; SC FILTER a 80 Hz afecta exclusivamente al detector. No se copia la cadena PWM/DAC/EQ del otro plugin ni su sobremuestreo 4×. El color más intenso también puede aumentar la distorsión, intermodulación y aliasing. POWER OFF y bypass del host dejan la señal original sin KI.
 
-## Windows x64
+## FIX
 
-Copiar la carpeta completa `Binaries/VCA SSL.vst3` al directorio VST3 del DAW. `Binaries/VCA SSL.exe` es Standalone. Identificador propio `VcSL`, bundle `com.papielguapo.vcassl`: no sustituye FET67 ni carga sus estados. No se instala automáticamente.
+RMS sin ponderación, integración de 400 ms, adaptación de 750 ms y transición ON/OFF de 50 ms. Referencia: canal de mayor RMS, con corrección común L/R. Límite ±24 dB; la corrección se congela cuando entrada o salida quedan por debajo de −70 dBFS RMS. Necesita unos segundos de estabilización. Iguala RMS, no LUFS, y no garantiza picos por debajo de 0 dBFS. Compensa también Make-Up y Trim. No añade ruido ni limitador.
 
-## Compilar
+## DSP y compatibilidad
 
-C++17, JUCE y Visual Studio con C++/Windows SDK. CMake utiliza C:/JUCE o descarga JUCE 9.0.5. Respetar la licencia JUCE correspondiente al uso y distribución.
+Detector feed-forward enlazado en estéreo, rodillas suaves y release Auto propio. Referencia de rangos: [manual de Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). Modelo independiente sin afiliación Waves/SSL ni equivalencia sonora 1:1. Las mediciones SSLComp guardadas son referencias históricas de versiones anteriores; no certifican la respuesta actual con KI integrado.
+
+Latencia cero; se declara un segundo de cola para el filtro KI. Protección de entradas NaN/Inf y amplitudes absurdas mayores de ±1 000 000 (+120 dBFS), sin limitación de picos musicales normal. Parámetros antiguos de Mix/Trim/Fade/sidechain externo se conservan para sesiones y automatización existentes, neutros en estados nuevos. El parámetro legado KI se conserva pero se ignora: KI está siempre activo. El antiguo valor numérico de SC Filter se conserva por compatibilidad pero el interruptor actual utiliza 80 Hz fijos.
+
+## Instalación y compilación
+
+Copiar la carpeta completa `Binaries/VCA SSL.vst3` a `C:/Program Files/Common Files/VST3` (puede requerir administrador), y volver a escanear el DAW. `Binaries/VCA SSL.exe` es Standalone. Fabricante Papi, plugin VcSL, bundle com.papielguapo.vcassl. No sustituye FET67.
+
+C++17, JUCE 9.0.5 y Visual Studio con C++/Windows SDK. CMake usa C:/JUCE o descarga JUCE. Respetar la licencia JUCE correspondiente a la distribución.
 
 ```powershell
 cmake -S . -B build -G "Visual Studio 18 2026" -A x64 -DVCASSL_COPY_PLUGIN_AFTER_BUILD=OFF
@@ -34,22 +47,6 @@ cmake --build build --config Release --parallel 4
 ctest --test-dir build -C Release --output-on-failure
 ```
 
-Pruebas offline incluidas en Tests. No se ha validado una matriz de DAWs ni se ha realizado comparación auditiva. La medición de referencia incluida cubre una curva estática y una traza de transitorio, no todos los ajustes. Las constantes nominales no garantizan transitorios idénticos a hardware u otros plugins.
+[Informe de auditoría](Auditoria.md) · [Log pluginval nivel 10](Reference/pluginval-level10.txt) · [Pruebas DSP](Reference/Tests.txt).
 
-## FIX — comparación al mismo volumen
-
-FIX se encuentra en la antigua posición de BYPASS. Apagado por defecto. Compensa únicamente la ganancia de salida para igualar el RMS de la señal original de entrada: no normaliza ni modifica la entrada, el umbral, el detector ni la reducción de ganancia. Así permite comparar con POWER apagado o con el bypass del DAW sin favorecer la opción más fuerte.
-
-Se utiliza RMS sin ponderación, con integración exponencial de 400 ms, adaptación de ganancia de 750 ms y transición de encendido/apagado de 50 ms. La referencia es el canal con mayor RMS, compartiendo la misma corrección entre L/R para conservar el balance estéreo. Ajuste máximo ±24 dB; por debajo de −70 dBFS RMS de entrada o salida se congela la corrección para evitar amplificar silencios. La igualación tarda unos segundos en estabilizarse y aproxima volumen RMS, no sonoridad perceptual LUFS. FIX no añade ruido, saturación, limitador ni latencia. Make-Up y Trim quedan compensados por FIX; desactívalo para juzgar su cambio de volumen. El fade heredado se aplica después de FIX.
-
-## KI — armónicos como en PWM TONE BOY
-
-Interruptor a la izquierda de METER, con pequeño piloto morado encendido cuando KI está en ON. Apagado por defecto e independiente de FIX. Reutiliza la función de segundo armónico de PWM TONE BOY: `x + k2*x*x/(1 + 0.25*x*x)`, con intensidad `0.008 + 0.012*(1-g)` dependiente de la reducción de ganancia y atenuación a niveles muy bajos. Se aplica tras la reducción VCA, antes de Make-Up y de FIX. No modifica el detector ni genera ruido.
-
-Incluye el filtro infrasonoro Butterworth de cuarto orden a 18 Hz, con estados y coeficientes en doble precisión. Sólo afecta a la ruta KI; apagado recupera exactamente la ruta limpia tras una transición de 20 ms. Se han adaptado la envolvente de nivel y el enlace al VCA: la transferencia armónica y el filtro proceden de PWM, pero no se copia su cadena completa de PWM/DAC/EQ. Esta versión no utiliza el sobremuestreo 4× de PWM TONE BOY; el contenido armónico de alta frecuencia puede producir aliasing. El filtro puede dejar una breve cola tras señales previas; desde reposo no produce señal ni ruido.
-
-![KI encendido, con piloto morado pequeño](Preview-KI-ON.png)
-
-## Auditoría 1.2.1
-
-**Pluginval 1.0.4 nivel 10: SUCCESS**, sobre el VST3 instalado en Windows, con GUI y automatización. Pruebas DSP y regresiones de robustez aprobadas. Corregidas las entradas numéricas extremas, la cola declarada de KI y la precisión de FIX. Skin con COMPRESSOR bajo VCA SSL. [Informe y límites de la auditoría](Auditoria.md) · [Log completo de pluginval](Reference/pluginval-level10.txt).
+![SC FILTER ON — piloto morado pequeño](Preview-SC-ON.png)
