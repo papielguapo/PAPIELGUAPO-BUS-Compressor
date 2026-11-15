@@ -5,9 +5,6 @@ namespace {
 float safeAudio(float x) noexcept { return std::isfinite(x)?juce::jlimit(-1.e6f,1.e6f,x):0.f; }
 float gain(float x) { return std::pow(10.f,x/20.f); }
 float db(float x) { return 20.f*std::log10(juce::jmax(x,1.e-9f)); }
-constexpr float attacks[]{0.0001f,0.0003f,0.001f,0.003f,0.01f,0.03f};
-constexpr float releases[]{0.1f,0.3f,0.6f,1.2f};
-constexpr float ratios[]{2,4,10};
 }
 juce::AudioProcessorValueTreeState::ParameterLayout VCASSLProcessor::makeParameters() {
  juce::AudioProcessorValueTreeState::ParameterLayout p;
@@ -21,8 +18,8 @@ juce::AudioProcessorValueTreeState::ParameterLayout VCASSLProcessor::makeParamet
  c("ratio","Ratio",{"2:1","4:1","10:1"},1);
  f("scFilter","SC Filter (0=Off, 21-500 Hz)",0,500,0,1); f("mix","Mix (%)",0,100,100,0.1f);
  f("trim","Trim (dB)",-18,18,0); f("fadeRate","Fade duration (s)",1,60,10,0.1f);
- b("fade","Fade Out",false); b("externalSC","External Sidechain",false);
- b("meterMode","Meter Output",false); b("bypass","Bypass",false); b("fix","FIX Level Match",false); b("ki","Legacy KI (unused)",true); b("scEnabled","SC Filter 80 Hz",false); return p;
+ b("fade","Fade Out",false); b("externalSC","Legacy External SC (automatic)",false);
+ b("meterMode","Meter Output",false); b("bypass","Bypass",false); b("fix","FIX Level Match",false); b("ki","Legacy KI (unused)",true); b("scEnabled","SC Filter 80 Hz",false); c("sidechainSource","Sidechain Source",{"Auto","Internal","External"},0); return p;
 }
 VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("Input",juce::AudioChannelSet::stereo(),true).withOutput("Output",juce::AudioChannelSet::stereo(),true).withInput("Sidechain",juce::AudioChannelSet::stereo(),false)),apvts(*this,nullptr,"VCASSL",makeParameters()) {
  setLatencySamples(HarmonicStage::latency);
@@ -41,6 +38,7 @@ VCASSLProcessor::VCASSLProcessor():AudioProcessor(BusesProperties().withInput("I
  externalSC=apvts.getRawParameterValue("externalSC");
  fix=apvts.getRawParameterValue("fix");
  scEnabled=apvts.getRawParameterValue("scEnabled");
+ sidechainSource=apvts.getRawParameterValue("sidechainSource");
 }
 bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
  const auto main=l.getMainInputChannelSet(); const auto sc=l.getChannelSet(true,1);
@@ -50,6 +48,7 @@ bool VCASSLProcessor::isBusesLayoutSupported(const BusesLayout& l) const {
 void VCASSLProcessor::prepareToPlay(double sr,int) {
  rate=juce::jmax(8000.0,sr);
  for(auto* s:{&thresholdDb,&makeupGain,&trimGain,&wet,&enabled,&scHz}) s->reset(rate,0.02);
+ dynamics.prepare(rate);
  for(auto& h:harmonics)h.prepare(rate);
  setLatencySamples(HarmonicStage::latency);
  fixBlend.reset(rate,0.05);
@@ -58,9 +57,10 @@ void VCASSLProcessor::prepareToPlay(double sr,int) {
  meterRelease=static_cast<float>(std::exp(-1.0/(rate*0.25))); rmsPole=static_cast<float>(std::exp(-1.0/(rate*0.3))); reset();
 }
 void VCASSLProcessor::reset() {
+ dynamics.reset();
  for(auto& h:harmonics)h.reset();for(auto& h:dryHistory)h.fill(0);dryPosition=0;
  fixInputChannelEnergy.fill(0);fixOutputChannelEnergy.fill(0);fixInputEnergy=fixOutputEnergy=0;fixPostDb=0;fixBlend.setCurrentAndTargetValue(fix->load()>0.5f?1.f:0.f);
- for(auto& h:sideHP) h.clear(); envelope=slowEnvelope=rms=grMeter=0; fadeGain=fade->load()>0.5f?0.f:1.f;
+ for(auto& h:sideHP) h.clear(); envelope=rms=grMeter=0; fadeGain=fade->load()>0.5f?0.f:1.f;
  thresholdDb.setCurrentAndTargetValue(threshold->load()); makeupGain.setCurrentAndTargetValue(gain(makeup->load()));
  trimGain.setCurrentAndTargetValue(gain(trim->load())); wet.setCurrentAndTargetValue(mix->load()/100.f);
  enabled.setCurrentAndTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);
@@ -71,13 +71,12 @@ void VCASSLProcessor::processAudio(juce::AudioBuffer<float>& buffer,juce::MidiBu
  juce::ScopedNoDenormals guard; midi.clear();
  auto b=getBusBuffer(buffer,false,0); const int n=b.getNumChannels(); if(n==0)return;
  auto side=getBusBuffer(buffer,true,1);
- const bool ext=externalSC->load()>0.5f&&side.getNumChannels()>0;
+ const int scMode=juce::jlimit(0,2,juce::roundToInt(sidechainSource->load()));
+ const bool ext=scMode==2||(scMode==0&&side.getNumChannels()>0);
  thresholdDb.setTargetValue(threshold->load()); makeupGain.setTargetValue(gain(makeup->load()));trimGain.setTargetValue(gain(trim->load()));
  wet.setTargetValue(mix->load()/100.f);enabled.setTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);scHz.setTargetValue(scEnabled->load()>0.5f?80.f:0.f);
  const int ai=juce::jlimit(0,5,juce::roundToInt(attack->load())),ri=juce::jlimit(0,4,juce::roundToInt(release->load()));
- const float r=ratios[juce::jlimit(0,2,juce::roundToInt(ratio->load()))];
- const float ac=static_cast<float>(std::exp(-1.0/(rate*attacks[ai])));
- const float slowCharge=static_cast<float>(std::exp(-1.0/(rate*0.4)));
+ dynamics.configure(juce::jlimit(0,2,juce::roundToInt(ratio->load())),ai,ri);
  fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
  const float fadeStep=1.f/static_cast<float>(rate*fadeRate->load());
  for(int i=0;i<b.getNumSamples();++i) {
@@ -93,15 +92,7 @@ void VCASSLProcessor::processAudio(juce::AudioBuffer<float>& buffer,juce::MidiBu
   float detector=0;const int sn=ext?side.getNumChannels():n;
   for(int ch=0;ch<sn;++ch){float x=ext?side.getSample(ch,i):input[ch];x=safeAudio(x);
    auto& hp=sideHP[static_cast<size_t>(ch)];hp.pole=pole;const float filtered=hp.tick(x);detector=juce::jmax(detector,std::abs(hz>0.5f?filtered:x));}
-  // Detector calibration fitted to SSLComp Stereo V14, 1 kHz, threshold 0, 4:1.
-  // Linked feed-forward VCA control with ratio-dependent soft knee.
-  const float over=db(detector)+24.1f-thresholdDb.getNextValue();const float knee=r==2?6.f:r==4?3.f:1.f;
-  const float slope=1.f-1.f/r;float target=0;
-  if(over>=knee/2)target=slope*over;else if(over>-knee/2){const float v=over+knee/2;target=slope*v*v/(2*knee);}
-  slowEnvelope=slowCharge*slowEnvelope+(1-slowCharge)*target;
-  const float seconds=ri==4?0.1f+1.1f*juce::jlimit(0.f,1.f,slowEnvelope/12.f):releases[ri];
-  const float rc=static_cast<float>(std::exp(-1.0/(rate*seconds)));const float coeff=target>envelope?ac:rc;
-  envelope=coeff*envelope+(1-coeff)*target;
+  envelope=dynamics.tick(detector,thresholdDb.getNextValue());
   fadeGain=juce::jlimit(0.f,1.f,fadeGain+(fade->load()>0.5f?-fadeStep:fadeStep));
   const float mg=makeupGain.getNextValue(),tg=trimGain.getNextValue(),w=wet.getNextValue(),on=enabled.getNextValue();
   const float compressionGain=gain(-envelope);

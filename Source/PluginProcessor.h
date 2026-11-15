@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cmath>
 #include "HarmonicStage.h"
+#include "BusDynamics.h"
 
 class VCASSLProcessor final : public juce::AudioProcessor
 {
@@ -43,15 +44,16 @@ private:
     };
     std::array<HighPass,2> sideHP;
     std::array<HarmonicStage,2> harmonics;
+    BusDynamics dynamics;
     std::array<std::array<float,HarmonicStage::latency>,2> dryHistory{};
     int dryPosition=0;
     void processAudio(juce::AudioBuffer<float>&,juce::MidiBuffer&,bool hostBypassed);
 
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
-        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled;
+        *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled, *sidechainSource;
     juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend;
     double rate = 44100;
-    float envelope = 0, slowEnvelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
+    float envelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
     float meterRelease = 0, rmsPole = 0;
     double fixInputEnergy = 0, fixOutputEnergy = 0;
     std::array<double,2> fixInputChannelEnergy{}, fixOutputChannelEnergy{};

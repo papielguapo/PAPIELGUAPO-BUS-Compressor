@@ -1,59 +1,35 @@
-# Auditoría VCA SSL COMPRESSOR 1.4.0 — papielguapo
+# Auditoría — VCA SSL 1.5.0
 
-Fecha: 15 de noviembre de 2026. Windows x64 Release, MSVC 19.51 / Visual Studio 2026, JUCE 9.0.5.
+Creador: papielguapo. Windows x64, JUCE 9.0.5, Release, 15/11/2026.
 
 ## Resultado
 
-**Pluginval 1.0.4 nivel 10: SUCCESS, código de salida 0**, ejecutado sobre la versión instalada en `C:/Program Files/Common Files/VST3/VCA SSL.vst3`. Semilla 671400, GUI habilitada, tasas 44.1/48/96 kHz y bloques 64/128/256/512/1024. Timeout de inactividad ampliado a 120 s, sin deshabilitar pruebas. [Log íntegro](Reference/pluginval-level10.txt).
+Batería DSP aprobada: 11 817 257 comprobaciones, 22.68 s. Pluginval 1.0.4, strictness 10, semilla 671500, SUCCESS, código 0, sobre la copia instalada en Program Files/Common Files/VST3. Logs completos en Reference/Tests.txt y Reference/pluginval-level10.txt. El validador independiente del SDK VST3 no está configurado; auval no aplica a Windows. No se ha realizado escucha humana ni verificación del enrutamiento en cada DAW.
 
-**Pruebas DSP aprobadas:** 8 937 112 comprobaciones internas, incluyendo verificaciones por muestra; no son millones de casos independientes. [Log](Reference/Tests.txt).
+SHA256 del VST3 instalado y entregado: `5E72514F430A314F97D1F374BBAE252C4EA601BDE4D363BEB35B2E434E513E4E`.
 
-SHA-256 del VST3 compilado, instalado y distribuido: `C289766900AB7D684B0F594A81478DA6B14DE6A1AF88D47691376092AA71DF9D`.
+## Sidechain sin cambios de skin
 
-## Cambio de audio
+Entrada auxiliar mono/estéreo seleccionada automáticamente cuando el host activa el bus Sidechain. En ausencia de bus se usa el detector interno. Sidechain Source, disponible sólo en parámetros del host, permite Auto (predeterminado), Internal o External. External sin señal detecta silencio; no vuelve a la entrada principal. SC FILTER actúa sobre el detector elegido. La señal auxiliar nunca se suma al audio.
 
-Se ha eliminado KI: no quedan su transferencia, su incremento de 25 dB, su dependencia de GR ni su filtro de 18 Hz en la ruta de audio. Se mantienen los identificadores de parámetros antiguos para compatibilidad; el parámetro KI legado se ignora.
+Pruebas de bus mono/estéreo, selección automática, override Internal, auxiliar silencioso con entrada principal fuerte y auxiliar fuerte con entrada principal silenciosa. Los índices anteriores se conservan y el selector se añade al final. Skin y etapa HarmonicStage.h sin cambios respecto a 1.4.0.
 
-La nueva etapa suma únicamente un residual polinómico de grado tres al audio comprimido: `0.01*x*x - 0.02*x*x*x`. El residual se calcula con interpolación/filtrado FIR 4× (257 taps en cada conversión). La señal limpia se retrasa 64 samples para alinearla, sin pasarla por esos filtros. Se elimina DC con un bloqueador de 1 Hz sólo en el residual añadido.
+## Dinámica frente a SSLComp
 
-No hay generador de ruido, dither, gate armónico, saturador adicional, EQ ni pasa-altos de 18 Hz sobre la señal limpia. La protección del residual por encima de +6 dBFS evita crecimiento polinómico extremo y no recorta la ruta limpia. El compresor VCA, SC FILTER de 80 Hz y FIX se conservan. El editor sigue abriendo al mínimo, 817 × 126.
+Calibración numérica independiente con 191 renders de SSLComp 14.12.90.381. Curvas estáticas interpoladas por umbral, ratio, ataque y release. Auto con recuperación rápida y memoria lenta; releases manuales recalibrados. No contiene código Waves ni depende de su instalación.
 
-## Mediciones
+En los ocho niveles a 1 kHz, threshold 0, ataque 10 ms y Auto, error máximo frente a Waves: 2:1 0.084 dB; 4:1 0.0015 dB; 10:1 0.0006 dB. Son puntos de calibración, no una garantía general. En el escalón medido, error medio Auto baja de 4.163 a 0.063 dB y manual de 0.748 a 0.0026 dB.
 
-Condición armónica: seno de 1 kHz, pico 0.2, 48 kHz, threshold +15 para que el compresor no actúe; análisis tras asentamiento.
+Validación independiente: niveles intermedios con ratio 4 y tres umbrales, error máximo 0.086 dB. Ráfagas no utilizadas en ajuste: error medio 0.005–0.040 dB; el ataque de 0.1 ms conserva un pico de diferencia de 3.27 dB en ventana de 1 ms. Con compresión a otras frecuencias se observan diferencias de hasta 1.27 dB. La interpolación matemática en otros ajustes también conserva errores próximos a 0.86 dB. No es una reproducción sonora 1:1.
 
-| Comprobación | Resultado |
-| --- | --- |
-| H2 | −59.9956 dBc |
-| H3 | −73.9750 dBc |
-| H4–H12 | Todos por debajo de −110 dBc en el ensayo |
-| Tono 18 kHz: alias de H2 a 12 kHz | −150.698 dBc |
-| Tono 18 kHz: alias de H3 a 6 kHz | −155.478 dBc |
-| Cambio RMS de un fondo de ruido de entrada muy bajo | −0.000285 dB, sin aumento en el ensayo |
-| Silencio desde reposo / tras reset | Cero digital exacto |
-| Respuesta fundamental a 5 Hz frente a 1 kHz | Diferencia inferior a 0.02 dB; sin corte de 18 Hz |
-| FIX, 44.1 kHz | +0.000434 / −0.000468 dB |
-| FIX, 96 kHz | +0.000463 / −0.000437 dB |
+En dos fragmentos musicales la correlación tras ajuste constante de volumen mejora: batería 0.99982 y bus 0.99943. La diferencia de RMS sin igualar baja de 1.699 a 0.583 dB en batería, pero sube de 0.293 a 0.796 dB en bus: la mejora no es uniforme. Los fragmentos no se publican en GitHub.
 
-Frente al alias de aproximadamente −37 dBc de KI +25 dB en el ensayo anterior de 18 kHz, la mejora medida es superior a 110 dB. Los valores cercanos a −150 dBc están condicionados por el render float32 y la precisión del ensayo; no se presentan como una especificación física universal.
+## Audio conservado
 
-## Latencia, bypass y estabilidad
+KI eliminado. Etapa H2/H3 4× sin cambios: H2 −59.9956 dBc, H3 −73.975 dBc; productos plegados del ensayo de 18 kHz −150.698 y −155.478 dBc. No se inyecta ruido. Ganancia del ruido bajo de entrada: −0.000285 dB en el ensayo. No implica ausencia de intermodulación con música ni sólo dos productos en cualquier señal.
 
-La latencia declarada es **64 samples**: 1.33 ms a 48 kHz. Pruebas de impulsos y bloques partidos confirman el retardo exacto de la mezcla seca y del bypass del host. El bypass continúa alimentando los estados internos para evitar una vuelta con estados reiniciados. La latencia la compensa el DAW según su configuración.
+Latencia real declarada tras preparación: 64 samples; rutas dry y bypass alineadas. FIX conserva el detector y equipara RMS, con error inferior a 0.003 dB en los ensayos. Pruebas de silencio, automatización, estados, bloques variables y tasas de 8–384 kHz, entradas NaN/Inf/extremas. Apertura mínima 817 × 126 conservada.
 
-Cola declarada conservadora de dos segundos para la eliminación de DC del residual. La sección informativa inicial de pluginval muestra 0 samples antes del procesamiento; el host offline, después de prepareToPlay, consulta y retira correctamente 64 samples. La cola reportada por pluginval es de dos segundos. POWER y bypass del host conservan la señal seca, alineada con ese retardo.
+[Mediciones](Reference/Validacion-dinamica.json) · [Calibración](Reference/ModelCalibration.json)
 
-Pasan las pruebas de pendientes 2/4/10, todas las combinaciones Attack/Release, SC sólo en detector, sidechain externo heredado, FIX sin modificar GR, persistencia, estados antiguos, mono/estéreo, bloques de 0/1/7/31/127/511/1024 y tasas 8/48/192/384 kHz. Las entradas NaN/Inf/máximos float no contaminan salida ni medidores. En la revisión del callback no se observan asignaciones de memoria, archivos, locks ni llamadas a GUI: los buffers FIR son arrays de tamaño fijo.
-
-## Alcance
-
-La etapa genera H2 y H3 en un tono simple dentro del rango normal. Las señales complejas producen intermodulación y la compresión puede generar otros productos; no se promete exclusividad matemática de H2/H3 para cualquier señal o nivel. La protección fuera de rango puede cambiar el espectro con entradas superiores a +6 dBFS.
-
-No se afirma ausencia absoluta de aliasing: se ha medido un caso exigente concreto. No se ha realizado escucha humana ni una matriz completa de DAWs. Pluginval no es certificación sonora ni equivalencia con Waves. El validador independiente del SDK VST3 se omitió al no estar configurado; auval no corresponde al formato Windows. Las diferencias de calibración por ratio y de recuperación Auto descritas en la comparación anterior no se han modificado en esta versión.
-
-Reproducción:
-
-```powershell
-ctest --test-dir build -C Release --output-on-failure
-pluginval --strictness-level 10 --random-seed 671400 --timeout-ms 120000 --validate "C:/Program Files/Common Files/VST3/VCA SSL.vst3"
-```
+![Comparación medida](Reference/Mejora-dinamica.png)

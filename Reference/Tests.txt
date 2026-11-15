@@ -1,30 +1,38 @@
-Start testing: Nov 15 19:57 Hora estándar romance
+Start testing: Nov 15 21:12 Hora estándar romance
 ----------------------------------------------------------
 1/1 Testing: DSP
 1/1 Test: DSP
 Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
 Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-"DSP" start time: Nov 15 19:57 Hora estándar romance
+"DSP" start time: Nov 15 21:12 Hora estándar romance
 Output:
 ----------------------------------------------------------
 Clean H2/H3 dBc: -59.9956 / -73.975
 Aliasing 18kHz, folded H2/H3 dBc: -150.698 / -155.478
-Ratio slope 0: 2.97497 dB
-Ratio slope 1: 1.48958 dB
-Ratio slope 2: 0.614207 dB
-SC 50Hz GR off/on dB: 13.2608 / 9.00415
-FIX RMS error 44100 Hz, 0.05: 0.000433771 dB
-FIX RMS error 44100 Hz, 0.5: -0.000468119 dB
-FIX RMS error 96000 Hz, 0.05: 0.000463285 dB
-FIX RMS error 96000 Hz, 0.5: -0.000436955 dB
+Static ratio 0, input -24: -30.4101 dBFS
+Static ratio 0, input -12: -24.2116 dBFS
+Static ratio 0, input 0: -18.7232 dBFS
+Static ratio 1, input -24: -28.0114 dBFS
+Static ratio 1, input -12: -24.0622 dBFS
+Static ratio 1, input 0: -20.8587 dBFS
+Static ratio 2, input -24: -27.0108 dBFS
+Static ratio 2, input -12: -23.6511 dBFS
+Static ratio 2, input 0: -22.3601 dBFS
+SC 50Hz GR off/on dB: 12.8294 / 9.07476
+FIX RMS error 44100 Hz, 0.05: 0.00042076 dB
+FIX RMS error 44100 Hz, 0.5: -0.00219914 dB
+FIX RMS error 96000 Hz, 0.05: 0.000448483 dB
+FIX RMS error 96000 Hz, 0.5: -0.00236983 dB
 Low-level noise gain: -0.000284967 dB
-PASS: 8937112 checks; clean H2/H3 antialiased, SC detector-only, FIX, noise, states, buses, hostile audio and automation
+Transient reference max selected error, mode 0: 0.233626 dB
+Transient reference max selected error, mode 1: 0.115681 dB
+PASS: 11817257 checks; clean H2/H3 antialiased, SC detector-only, FIX, noise, states, buses, hostile audio and automation
 <end of output>
-Test time =  15.10 sec
+Test time =  22.68 sec
 ----------------------------------------------------------
 Test Passed.
-"DSP" end time: Nov 15 19:57 Hora estándar romance
-"DSP" time elapsed: 00:00:15
+"DSP" end time: Nov 15 21:12 Hora estándar romance
+"DSP" time elapsed: 00:00:22
 ----------------------------------------------------------
 
-End testing: Nov 15 19:57 Hora estándar romance
+End testing: Nov 15 21:12 Hora estándar romance

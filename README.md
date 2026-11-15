@@ -8,7 +8,7 @@
 
 Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %. **Siempre se abre al mínimo: 817 × 126 (50 %), también al reabrir el editor o cargar sesiones antiguas.** Se puede ampliar durante el uso.
 
-## Controles actuales — 1.4.0
+## Controles actuales — 1.5.0
 
 - Threshold −15…+15 dB; Make-Up −5…+15 dB.
 - Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10.
@@ -18,6 +18,18 @@ Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.co
 - FIX iguala el RMS final de salida al RMS original de entrada para comparar al mismo volumen. No modifica el detector ni la señal de entrada. Apagado por defecto.
 
 Doble clic restaura valores y el popup indica el ajuste. Sin botón Analog ni ruido generado.
+
+## Dinámica recalibrada — 1.5.0
+
+Se han medido curvas de SSLComp para las 30 combinaciones Attack/Release y los tres ratios, y una malla de umbral entre −15 y +15 dB. La calibración numérica queda integrada en C++ con interpolación monótona; no se copia código de Waves. Auto combina una recuperación rápida de unos 43–45 ms con una memoria lenta de unos 5.1 s, cuya carga depende de la duración y nivel previos. Los controles conservan las etiquetas nominales de la referencia.
+
+Es una aproximación medida, no una reproducción certificada 1:1. Las tablas están calibradas principalmente con tonos de 1 kHz a 48 kHz; la respuesta con música, otras frecuencias y transitorios muy rápidos puede diferir. Se adjuntan resultados y límites en la auditoría. La etapa H2/H3 de 1.4.0 se conserva sin cambios.
+
+## Sidechain externo sin cambios en la skin
+
+Enruta la señal de control a la entrada auxiliar **Sidechain** del VST3 y actívala en el DAW. Con la fuente en **Auto** (valor inicial), el compresor usa ese bus cuando el host lo activa; si está desactivado usa la entrada principal. El sidechain controla la compresión y nunca se mezcla con la salida. SC FILTER aplica sus 80 Hz al detector seleccionado.
+
+El parámetro **Sidechain Source** aparece sólo en los parámetros del host/automatización: Auto, Internal y External. Permite forzar Internal en hosts que mantengan el bus auxiliar siempre activo. External fuerza el detector auxiliar y recibe silencio si no hay bus/señal; no vuelve automáticamente a la entrada principal durante los huecos de una señal de sidechain. No se añade ningún control al frontal. El parámetro externo legado se conserva por compatibilidad, pero no es necesario activarlo.
 
 ## Armónicos limpios H2/H3 — 1.4.0
 
@@ -33,9 +45,9 @@ RMS sin ponderación, integración de 400 ms, adaptación de 750 ms y transició
 
 ## DSP y compatibilidad
 
-Detector feed-forward enlazado en estéreo, rodillas suaves y release Auto propio. Referencia de rangos: [manual de Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). Modelo independiente sin afiliación Waves/SSL ni equivalencia sonora 1:1. Las mediciones SSLComp guardadas son referencias históricas de versiones anteriores; no certifican la respuesta de la etapa H2/H3 actual.
+Detector híbrido pico/RMS corto enlazado en estéreo, con calibración estática por ratio, ataque, release y umbral. Auto utiliza una recuperación rápida y una memoria lenta dependiente del programa; los releases manuales y sus ataques se han ajustado con mediciones de SSLComp. Referencia de rangos: [manual de Waves](https://assets.wavescdn.com/pdf/plugins/ssl-g-master-buss-compressor.pdf). Modelo independiente sin afiliación Waves/SSL ni equivalencia sonora 1:1. La auditoría 1.5.0 incluye nuevas mediciones comparativas y sus límites; los archivos SSLComp-4.txt y vca-transfer.txt son históricos.
 
-Latencia declarada de 64 samples; cola conservadora de dos segundos para la eliminación de DC del componente añadido. Protección de entradas NaN/Inf y amplitudes absurdas mayores de ±1 000 000 (+120 dBFS), sin limitación de picos musicales normal. Parámetros antiguos de Mix/Trim/Fade/sidechain externo se conservan para sesiones y automatización existentes, neutros en estados nuevos. El parámetro legado KI se conserva pero se ignora: ya no existe esa etapa. El antiguo valor numérico de SC Filter se conserva por compatibilidad pero el interruptor actual utiliza 80 Hz fijos.
+Latencia declarada de 64 samples; cola conservadora de dos segundos para la eliminación de DC del componente añadido. Protección de entradas NaN/Inf y amplitudes absurdas mayores de ±1 000 000 (+120 dBFS), sin limitación de picos musicales normal. Parámetros antiguos de Mix/Trim/Fade se conservan para sesiones y automatización existentes, neutros en estados nuevos. El selector nuevo Sidechain Source se añade al final de la lista para conservar los índices anteriores. El parámetro legado KI se conserva pero se ignora: ya no existe esa etapa. El antiguo valor numérico de SC Filter se conserva por compatibilidad pero el interruptor actual utiliza 80 Hz fijos.
 
 ## Instalación y compilación
 
