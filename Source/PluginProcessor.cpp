@@ -2,6 +2,7 @@
 #include "PluginEditor.h"
 #include <cmath>
 namespace {
+float safeAudio(float x) noexcept { return std::isfinite(x)?juce::jlimit(-1.e6f,1.e6f,x):0.f; }
 float gain(float x) { return std::pow(10.f,x/20.f); }
 float db(float x) { return 20.f*std::log10(juce::jmax(x,1.e-9f)); }
 constexpr float attacks[]{0.0001f,0.0003f,0.001f,0.003f,0.01f,0.03f};
@@ -52,8 +53,8 @@ void VCASSLProcessor::prepareToPlay(double sr,int) {
  kiReleasePole=static_cast<float>(std::exp(-1.0/(rate*0.08)));
  for(auto& filters:kiHighPass){filters[0].prepare(rate,0.54119610);filters[1].prepare(rate,1.30656296);}
  fixBlend.reset(rate,0.05);
- fixMeasurePole=static_cast<float>(std::exp(-1.0/(rate*0.4)));
- fixGainPole=static_cast<float>(std::exp(-1.0/(rate*0.75)));
+ fixMeasurePole=std::exp(-1.0/(rate*0.4));
+ fixGainPole=std::exp(-1.0/(rate*0.75));
  meterRelease=static_cast<float>(std::exp(-1.0/(rate*0.25))); rmsPole=static_cast<float>(std::exp(-1.0/(rate*0.3))); reset();
 }
 void VCASSLProcessor::reset() {
@@ -80,7 +81,7 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
  fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
  const float fadeStep=1.f/static_cast<float>(rate*fadeRate->load());
  for(int i=0;i<b.getNumSamples();++i) {
-  float dry[2]{};for(int ch=0;ch<n;++ch){const float x=b.getSample(ch,i);dry[ch]=std::isfinite(x)?x:0.f;}
+  float dry[2]{};for(int ch=0;ch<n;++ch){const float x=b.getSample(ch,i);dry[ch]=safeAudio(x);}
   // Measure the original input independently; FIX never changes the compressor drive.
   constexpr double fixGateEnergy = 1.e-7;
   fixInputEnergy=0;for(int ch=0;ch<n;++ch){auto& e=fixInputChannelEnergy[static_cast<size_t>(ch)];
@@ -88,7 +89,7 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
   const float fixing=fixBlend.getNextValue();
   const float hz=scHz.getNextValue(); const float pole=static_cast<float>(std::exp(-juce::MathConstants<double>::twoPi*juce::jmax(21.f,hz)/rate));
   float detector=0;const int sn=ext?side.getNumChannels():n;
-  for(int ch=0;ch<sn;++ch){float x=ext?side.getSample(ch,i):dry[ch];if(!std::isfinite(x))x=0;
+  for(int ch=0;ch<sn;++ch){float x=ext?side.getSample(ch,i):dry[ch];x=safeAudio(x);
    auto& hp=sideHP[static_cast<size_t>(ch)];hp.pole=pole;const float filtered=hp.tick(x);detector=juce::jmax(detector,std::abs(hz>0.5f?filtered:x));}
   // Detector calibration fitted to SSLComp Stereo V14, 1 kHz, threshold 0, 4:1.
   // Linked feed-forward VCA control with ratio-dependent soft knee.
@@ -114,9 +115,9 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
    compressed[ch]=(dry[ch]+w*(x-dry[ch]))*tg;auto& e=fixOutputChannelEnergy[static_cast<size_t>(ch)];
    e=fixMeasurePole*e+(1-fixMeasurePole)*static_cast<double>(compressed[ch])*compressed[ch];fixOutputEnergy=juce::jmax(fixOutputEnergy,e);}
   if(fixInputEnergy>fixGateEnergy&&fixOutputEnergy>fixGateEnergy){
-   const float wanted=juce::jlimit(-24.f,24.f,10.f*static_cast<float>(std::log10(fixInputEnergy/fixOutputEnergy)));
+   const double wanted=juce::jlimit(-24.0,24.0,10.0*std::log10(fixInputEnergy/fixOutputEnergy));
    fixPostDb=fixGainPole*fixPostDb+(1-fixGainPole)*wanted;}
-  const float postGain=1.f+fixing*(gain(fixPostDb)-1.f);
+  const float postGain=1.f+fixing*(gain(static_cast<float>(fixPostDb))-1.f);
   float energy=0;
   for(int ch=0;ch<n;++ch){const float processed=compressed[ch]*postGain*fadeGain;
    const float out=on<=0?dry[ch]:dry[ch]+on*(processed-dry[ch]);b.setSample(ch,i,out);energy=juce::jmax(energy,out*out);}
@@ -127,7 +128,9 @@ void VCASSLProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce::MidiBu
 }
 void VCASSLProcessor::processBlockBypassed(juce::AudioBuffer<float>& b,juce::MidiBuffer& m) {
  m.clear();wasBypassed=true;currentGrDb.store(0);
- auto out=getBusBuffer(b,false,0);float e=0;for(int ch=0;ch<out.getNumChannels();++ch)e=juce::jmax(e,out.getRMSLevel(ch,0,out.getNumSamples()));currentOutDb.store(db(e));
+ auto out=getBusBuffer(b,false,0);double e=0;
+ if(out.getNumSamples()>0)for(int ch=0;ch<out.getNumChannels();++ch){double sum=0;for(int i=0;i<out.getNumSamples();++i){const float x=safeAudio(out.getSample(ch,i));out.setSample(ch,i,x);sum+=static_cast<double>(x)*x;}e=juce::jmax(e,std::sqrt(sum/out.getNumSamples()));}
+ currentOutDb.store(db(static_cast<float>(e)));
 }
 juce::AudioProcessorParameter* VCASSLProcessor::getBypassParameter() const {return apvts.getParameter("bypass");}
 void VCASSLProcessor::getStateInformation(juce::MemoryBlock& dest)

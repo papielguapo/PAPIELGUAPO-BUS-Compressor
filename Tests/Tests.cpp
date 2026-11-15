@@ -4,6 +4,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <cmath>
+#include <limits>
 void check(bool x,const char* m){if(!x)throw std::runtime_error(m);}
 void set(VCASSLProcessor& p,const char* id,float x){auto* v=p.apvts.getParameter(id);v->setValueNotifyingHost(v->convertTo0to1(x));}
 float run(VCASSLProcessor& p,float level,int blocks=3000){juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;float last=0;
@@ -67,5 +68,18 @@ int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
  // Mono host layout.
  {VCASSLProcessor q;auto layout=q.getBusesLayout();layout.inputBuses.getReference(0)=juce::AudioChannelSet::mono();layout.outputBuses.getReference(0)=juce::AudioChannelSet::mono();check(q.setBusesLayout(layout),"mono layout");q.setRateAndBufferSizeDetails(48000,128);q.prepareToPlay(48000,128);juce::AudioBuffer<float>b(1,128);b.clear();juce::MidiBuffer m;q.processBlock(b,m);check(std::isfinite(b.getSample(0,0)),"mono process");}
  set(p,"threshold",-7.3f);juce::MemoryBlock state;p.getStateInformation(state);VCASSLProcessor restored;restored.setStateInformation(state.getData(),static_cast<int>(state.getSize()));check(std::abs(restored.apvts.getRawParameterValue("threshold")->load()+7.3f)<.001f,"state");
+ // Audit regression: a legacy state without new controls must restore defaults, not inherit last toggles.
+ {VCASSLProcessor legacy;auto tree=legacy.apvts.copyState();for(const char* id:{"fix","ki"})tree.removeChild(tree.getChildWithProperty("id",id),nullptr);
+  juce::MemoryBlock old;auto xml=tree.createXml();juce::AudioProcessor::copyXmlToBinary(*xml,old);VCASSLProcessor q;set(q,"fix",1);set(q,"ki",1);q.setStateInformation(old.getData(),static_cast<int>(old.getSize()));
+  check(q.apvts.getRawParameterValue("fix")->load()==0&&q.apvts.getRawParameterValue("ki")->load()==0,"legacy state must reset absent FIX and KI to defaults");}
+ // Audit regression: invalid/exceptional host audio must not poison KI/filter state or meters.
+ for(bool coloured:{false,true}){VCASSLProcessor q;set(q,"ki",coloured?1.f:0.f);set(q,"fix",1);set(q,"makeup",15);set(q,"trim",18);q.setRateAndBufferSizeDetails(192000,128);q.prepareToPlay(192000,128);juce::AudioBuffer<float>b(2,128);juce::MidiBuffer m;
+  const float hostile[]{std::numeric_limits<float>::quiet_NaN(),std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),std::numeric_limits<float>::max(),-std::numeric_limits<float>::max()};
+  for(float x:hostile){for(int c=0;c<2;++c)for(int i=0;i<128;++i)b.setSample(c,i,x);q.processBlock(b,m);for(int c=0;c<2;++c)for(int i=0;i<128;++i)check(std::isfinite(b.getSample(c,i)),"hostile input must not poison output");check(std::isfinite(q.currentOutDb.load()),"hostile input must not poison meters");}
+  for(int j=0;j<1000;++j){b.clear();q.processBlock(b,m);check(std::isfinite(b.getSample(0,127)),"recovery after hostile input");}}
+ // Audit: arbitrary host block lengths (including zero), mono and stereo, and all KI/FIX combinations.
+ for(int channels:{1,2})for(double sr:{8000.,192000.,384000.})for(int flags=0;flags<4;++flags){VCASSLProcessor q;auto layout=q.getBusesLayout();layout.inputBuses.getReference(0)=channels==1?juce::AudioChannelSet::mono():juce::AudioChannelSet::stereo();layout.outputBuses.getReference(0)=layout.inputBuses[0];check(q.setBusesLayout(layout),"audit layout");set(q,"ki",static_cast<float>(flags&1));set(q,"fix",static_cast<float>((flags>>1)&1));q.setRateAndBufferSizeDetails(sr,1024);q.prepareToPlay(sr,1024);juce::MidiBuffer m;
+  for(int size:{0,1,7,31,127,511,1024}){juce::AudioBuffer<float>b(channels,size);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)b.setSample(c,i,.3f*static_cast<float>(std::sin((i+1)*.17)));q.processBlock(b,m);for(int c=0;c<channels;++c)for(int i=0;i<size;++i)check(std::isfinite(b.getSample(c,i)),"arbitrary blocks finite");q.processBlockBypassed(b,m);check(std::isfinite(q.currentOutDb.load()),"zero/arbitrary bypass meter finite");}
+  q.reset();juce::AudioBuffer<float>silence(channels,127);silence.clear();q.processBlock(silence,m);check(silence.getMagnitude(0,127)==0,"reset restores silence");}
  std::cout<<"PASS: slopes 2/4/10, stereo link, mix, bypass, power, all attack/release settings, fade, state; 44.1/48/96 kHz\n";
  return 0;}catch(const std::exception& e){std::cerr<<e.what()<<"\n";return 1;}}

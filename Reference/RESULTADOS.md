@@ -1,4 +1,4 @@
-# Verificación — VCA SSL 1.2.0
+# Verificación — VCA SSL 1.2.1
 
 Base FET67: commit ecd6fc7f37d69fa31560461fd76dd5188ffe9069. Compilación Windows x64, MSVC 19.51, Visual Studio 2026, JUCE local 9.0.5. VST3 y Standalone generados. No incluye instalador ni firma digital.
 
@@ -36,3 +36,7 @@ Pruebas nuevas con seno de 997 Hz a amplitudes 0.05 y 0.5, 44.1 y 96 kHz; incluy
 Transferencia armónica tomada de la implementación local de PWM TONE BOY (`processCraneTriodeEven`) y filtro Butterworth de cuarto orden a 18 Hz con los mismos Q. Envolvente de nivel adaptada al VCA, sin añadir la cadena PWM/DAC/EQ ni el sobremuestreo del otro plugin. Parámetro KI añadido al final y apagado por defecto. Transición de 20 ms.
 
 Seno de 1 kHz y amplitud 0.2, threshold +15: H2 = −62.0248 dBc y H3 = −157.202 dBc. Pruebas aprobadas de predominio H2, diferencia con ruta limpia, bloqueo DC, atenuación infrasonora mayor de 40 dB a 5 Hz, silencio exacto desde reposo, persistencia y FIX RMS junto con KI (error menor de 0.1 dB). Las pruebas previas de compresión y FIX siguen pasando. Capturas reales de KI OFF y ON revisadas; el piloto morado pequeño se ilumina sólo en ON.
+
+## Auditoría 1.2.1
+
+Pluginval nivel 10 SUCCESS y batería DSP ampliada aprobada. FIX mejorado a menos de 0.0005 dB de error en los cuatro casos medidos. Ver [informe completo](../Auditoria.md) y [log final](pluginval-level10.txt).

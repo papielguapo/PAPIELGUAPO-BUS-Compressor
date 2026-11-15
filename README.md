@@ -49,3 +49,7 @@ Interruptor a la izquierda de METER, con pequeño piloto morado encendido cuando
 Incluye el filtro infrasonoro Butterworth de cuarto orden a 18 Hz, con estados y coeficientes en doble precisión. Sólo afecta a la ruta KI; apagado recupera exactamente la ruta limpia tras una transición de 20 ms. Se han adaptado la envolvente de nivel y el enlace al VCA: la transferencia armónica y el filtro proceden de PWM, pero no se copia su cadena completa de PWM/DAC/EQ. Esta versión no utiliza el sobremuestreo 4× de PWM TONE BOY; el contenido armónico de alta frecuencia puede producir aliasing. El filtro puede dejar una breve cola tras señales previas; desde reposo no produce señal ni ruido.
 
 ![KI encendido, con piloto morado pequeño](Preview-KI-ON.png)
+
+## Auditoría 1.2.1
+
+**Pluginval 1.0.4 nivel 10: SUCCESS**, sobre el VST3 instalado en Windows, con GUI y automatización. Pruebas DSP y regresiones de robustez aprobadas. Corregidas las entradas numéricas extremas, la cola declarada de KI y la precisión de FIX. Skin con COMPRESSOR bajo VCA SSL. [Informe y límites de la auditoría](Auditoria.md) · [Log completo de pluginval](Reference/pluginval-level10.txt).

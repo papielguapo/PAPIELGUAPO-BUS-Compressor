@@ -21,7 +21,7 @@ public:
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
-    double getTailLengthSeconds() const override { return 0.0; }
+    double getTailLengthSeconds() const override { return 1.0; }
     int getNumPrograms() override { return 1; }
     int getCurrentProgram() override { return 0; }
     void setCurrentProgram(int) override {}
@@ -60,7 +60,7 @@ private:
     float meterRelease = 0, rmsPole = 0;
     double fixInputEnergy = 0, fixOutputEnergy = 0;
     std::array<double,2> fixInputChannelEnergy{}, fixOutputChannelEnergy{};
-    float fixPostDb = 0, fixMeasurePole = 0, fixGainPole = 0;
+    double fixPostDb = 0, fixMeasurePole = 0, fixGainPole = 0;
     float kiPeak=0, kiReleasePole=0;
     bool wasBypassed = false;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(VCASSLProcessor)
