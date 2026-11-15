@@ -1,5 +1,5 @@
 Started validating: C:\Program Files\Common Files\VST3\VCA SSL.vst3
-Random seed: 0xa3f0c
+Random seed: 0xa3f0d
 Validation started
 Strictness level: 10
 -----------------------------------------------------------------
@@ -7,7 +7,7 @@ Starting tests in: pluginval / Scan for plugins located in: C:\Program Files\Com
 Num plugins found: 1
 
 Testing plugin: VST3-VCA SSL-49c9ce56-6098018d
-Papielguapo: VCA SSL v1.5.0
+Papielguapo: VCA SSL v1.5.1
 Completed tests in pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\VCA SSL.vst3
 -----------------------------------------------------------------
 Starting tests in: pluginval / Open plugin (cold)...

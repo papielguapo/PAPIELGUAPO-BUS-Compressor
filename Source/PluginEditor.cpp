@@ -120,6 +120,54 @@ FaceplateComponent::FaceplateComponent(VCASSLProcessor& p):processor(p)
             return juce::String(v,1)+" dB";
         };
         knobAttachments[i]=std::make_unique<SA>(processor.apvts,ids[i],s);
+        auto& value=valueLabels[i];addAndMakeVisible(value);
+        value.setName(juce::String(names[i])+" value");
+        value.setEditable(false,true,false);
+        value.setJustificationType(juce::Justification::centred);
+        value.setFont(font("Arial",13,juce::Font::bold));
+        value.setColour(juce::Label::textColourId,colour(0xff171c1f));
+        value.setColour(juce::Label::backgroundColourId,juce::Colours::transparentBlack);
+        value.setColour(juce::Label::textWhenEditingColourId,colour(0xff171c1f));
+        value.setColour(juce::Label::backgroundWhenEditingColourId,colour(0xffeee8f4));
+        value.setTooltip("Double-click to type a value; Enter confirms, Escape cancels");
+        s.editValue=[this,i]{valueLabels[i].showEditor();};
+        value.onTextChange=[this,i,id=juce::String(ids[i])]
+        {
+            auto entered=valueLabels[i].getText().trim().toLowerCase().replaceCharacter(',', '.');
+            double next=knobs[i].getValue();
+            if(i==3 && entered=="auto") next=4;
+            else
+            {
+                // Accept physical units (10 ms, 0.3 s, 4:1, -6 dB), never choice indices.
+                const auto numeric=entered.upToFirstOccurrenceOf(":",false,false)
+                    .trimCharactersAtEnd(" dbms").trim();
+                bool digit=false,valid=numeric.isNotEmpty();int dots=0;
+                for(int j=0;j<numeric.length();++j){const auto c=numeric[j];
+                    if(c>='0'&&c<='9')digit=true;
+                    else if(c=='.'){if(++dots>1)valid=false;}
+                    else if(!((c=='-'||c=='+')&&j==0))valid=false;}
+                if(valid&&digit)
+                {
+                    const double number=numeric.getDoubleValue();
+                    if(i<2)next=number;
+                    else
+                    {
+                        constexpr double attacks[]{.1,.3,1,3,10,30},releases[]{.1,.3,.6,1.2},ratios[]{2,4,10};
+                        const double* choices=i==2?attacks:i==3?releases:ratios;
+                        const int count=i==2?6:i==3?4:3;int closest=0;
+                        for(int j=1;j<count;++j)if(std::abs(choices[j]-number)<std::abs(choices[closest]-number))closest=j;
+                        next=closest;
+                    }
+                }
+            }
+            auto* parameter=processor.apvts.getParameter(id);
+            parameter->beginChangeGesture();
+            knobs[i].setValue(next,juce::sendNotificationSync);
+            parameter->endChangeGesture();
+            valueLabels[i].setText(knobs[i].getTextFromValue(knobs[i].getValue()),juce::dontSendNotification);
+        };
+        value.setText(s.getTextFromValue(s.getValue()),juce::dontSendNotification);
+
     }
     const char* switchIds[]{"power","meterMode","fix","scEnabled"};
     const char* tips[]{"Power: on / dry passthrough","Meter: gain reduction / output","FIX: match output RMS to original input for level-matched comparison","SC FILTER: 80 Hz high-pass in the detector only; audio bass remains intact"};
@@ -130,7 +178,7 @@ FaceplateComponent::~FaceplateComponent() {stopTimer();setLookAndFeel(nullptr);}
 void FaceplateComponent::resized()
 {
     constexpr int centres[]{374,511,649,787,924};
-    for(size_t i=0;i<5;++i)knobs[i].setBounds(centres[i]-38,80,76,76);
+    for(size_t i=0;i<5;++i){knobs[i].setBounds(centres[i]-38,80,76,76);valueLabels[i].setBounds(centres[i]-55,222,110,22);}
     switches[0].setBounds(204,137,50,36);
     switches[1].setBounds(1169,135,50,36);
     switches[2].setBounds(1299,135,50,36);
@@ -138,6 +186,8 @@ void FaceplateComponent::resized()
 }
 void FaceplateComponent::timerCallback()
 {
+    for(size_t i=0;i<knobs.size();++i)if(!valueLabels[i].isBeingEdited())
+        valueLabels[i].setText(knobs[i].getTextFromValue(knobs[i].getValue()),juce::dontSendNotification);
     shownGr=processor.currentGrDb.load(std::memory_order_relaxed);
     shownOut=processor.currentOutDb.load(std::memory_order_relaxed);
     repaint();

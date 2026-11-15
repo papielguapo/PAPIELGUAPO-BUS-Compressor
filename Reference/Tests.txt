@@ -1,10 +1,10 @@
-Start testing: Nov 15 21:12 Hora estándar romance
+Start testing: Nov 15 21:52 Hora estándar romance
 ----------------------------------------------------------
 1/1 Testing: DSP
 1/1 Test: DSP
 Command: "C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca/VCASSLTests_artefacts/Release/VCASSLTests.exe"
 Directory: C:/Users/anton/Documents/Codex/2026-11-15/en/work/build-vca
-"DSP" start time: Nov 15 21:12 Hora estándar romance
+"DSP" start time: Nov 15 21:52 Hora estándar romance
 Output:
 ----------------------------------------------------------
 Clean H2/H3 dBc: -59.9956 / -73.975
@@ -28,11 +28,11 @@ Transient reference max selected error, mode 0: 0.233626 dB
 Transient reference max selected error, mode 1: 0.115681 dB
 PASS: 11817257 checks; clean H2/H3 antialiased, SC detector-only, FIX, noise, states, buses, hostile audio and automation
 <end of output>
-Test time =  22.68 sec
+Test time =  19.01 sec
 ----------------------------------------------------------
 Test Passed.
-"DSP" end time: Nov 15 21:12 Hora estándar romance
-"DSP" time elapsed: 00:00:22
+"DSP" end time: Nov 15 21:52 Hora estándar romance
+"DSP" time elapsed: 00:00:19
 ----------------------------------------------------------
 
-End testing: Nov 15 21:12 Hora estándar romance
+End testing: Nov 15 21:52 Hora estándar romance

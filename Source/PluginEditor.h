@@ -11,6 +11,13 @@ public:
     void drawToggleButton(juce::Graphics&, juce::ToggleButton&, bool, bool) override;
 };
 
+class EditableKnob final : public juce::Slider
+{
+public:
+    std::function<void()> editValue;
+    void mouseDoubleClick(const juce::MouseEvent&) override { if (editValue) editValue(); }
+};
+
 class FaceplateComponent final : public juce::Component, private juce::Timer
 {
 public:
@@ -23,7 +30,8 @@ private:
     void paintMeter(juce::Graphics&);
     VCASSLProcessor& processor;
     VCASSLLookAndFeel look;
-    std::array<juce::Slider,5> knobs;
+    std::array<EditableKnob,5> knobs;
+    std::array<juce::Label,5> valueLabels;
     std::array<juce::ToggleButton,4> switches;
     using SA = juce::AudioProcessorValueTreeState::SliderAttachment;
     using BA = juce::AudioProcessorValueTreeState::ButtonAttachment;

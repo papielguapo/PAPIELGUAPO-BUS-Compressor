@@ -23,6 +23,23 @@ Tone tone(VCASSLProcessor& p,double sr,double seconds,double frequency,float amp
 }
 }
 int main(int argc,char** argv){juce::ScopedJuceInitialiser_GUI gui;try{
+ if(argc>1&&juce::String(argv[1])=="--edit-check"){
+  VCASSLProcessor p;std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());
+  const char* names[]{"Threshold value","Make-Up value","Attack value","Release value","Ratio value"};
+  const char* ids[]{"threshold","makeup","attack","release","ratio"};
+  const char* entered[]{"-6,5 dB","8 dB","3 ms","Auto","10:1"};
+  const float expected[]{-6.5f,8.f,3.f,4.f,2.f};
+  for(int i=0;i<5;++i){juce::Label* found=nullptr;
+   for(auto* component:ed->getChildren())for(auto* child:component->getChildren())
+    if(child->getName()==names[i])found=dynamic_cast<juce::Label*>(child);
+   check(found!=nullptr,"editable value exists");
+   found->setText(entered[i],juce::sendNotificationSync);
+   check(std::abs(p.apvts.getRawParameterValue(ids[i])->load()-expected[i])<.01f,"typed physical value reaches parameter");
+   found->setText("invalid",juce::sendNotificationSync);
+   check(std::abs(p.apvts.getRawParameterValue(ids[i])->load()-expected[i])<.01f,"invalid entry preserves value");
+  }
+  std::cout<<"PASS: editable values, units, comma decimals, Auto, choices and invalid input\n";return 0;
+ }
  if(argc>1){VCASSLProcessor p;if(argc>2&&juce::String(argv[2])=="--sc-on")set(p,"scEnabled",1);std::unique_ptr<juce::AudioProcessorEditor> ed(p.createEditor());ed->resized();const auto image=ed->createComponentSnapshot(ed->getLocalBounds());juce::FileOutputStream stream{juce::File{juce::String(argv[1])}};check(stream.openedOk(),"preview stream");stream.setPosition(0);stream.truncate();juce::PNGImageFormat png;check(png.writeImageToStream(image,stream),"preview PNG");return 0;}
  // Clean additive H2/H3 stage, isolated from the VCA detector.
  VCASSLProcessor spectral;set(spectral,"threshold",15);prepare(spectral);const auto ki=tone(spectral,48000,3,1000,.2f);

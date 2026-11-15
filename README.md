@@ -8,7 +8,7 @@
 
 Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %. **Siempre se abre al mínimo: 817 × 126 (50 %), también al reabrir el editor o cargar sesiones antiguas.** Se puede ampliar durante el uso.
 
-## Controles actuales — 1.5.0
+## Controles actuales — 1.5.1
 
 - Threshold −15…+15 dB; Make-Up −5…+15 dB.
 - Attack 0.1/0.3/1/3/10/30 ms; Release 0.1/0.3/0.6/1.2 s/Auto; Ratio 2/4/10.
@@ -30,6 +30,10 @@ Es una aproximación medida, no una reproducción certificada 1:1. Las tablas es
 Enruta la señal de control a la entrada auxiliar **Sidechain** del VST3 y actívala en el DAW. Con la fuente en **Auto** (valor inicial), el compresor usa ese bus cuando el host lo activa; si está desactivado usa la entrada principal. El sidechain controla la compresión y nunca se mezcla con la salida. SC FILTER aplica sus 80 Hz al detector seleccionado.
 
 El parámetro **Sidechain Source** aparece sólo en los parámetros del host/automatización: Auto, Internal y External. Permite forzar Internal en hosts que mantengan el bus auxiliar siempre activo. External fuerza el detector auxiliar y recibe silencio si no hay bus/señal; no vuelve automáticamente a la entrada principal durante los huecos de una señal de sidechain. No se añade ningún control al frontal. El parámetro externo legado se conserva por compatibilidad, pero no es necesario activarlo.
+
+## Entrada de valores — 1.5.1
+
+Doble clic en el mando o en su valor numérico bajo el nombre para escribir. Enter confirma y Escape cancela. Admite coma o punto decimal, dB, ataque en ms, release en segundos o Auto y ratio como 4:1. Los controles discretos eligen el paso disponible más cercano; los continuos respetan su rango. Texto inválido conserva el valor anterior. Los cambios se notifican al host para automatización.
 
 ## Armónicos limpios H2/H3 — 1.4.0
 

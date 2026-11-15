@@ -1,18 +1,22 @@
-# Auditoría — VCA SSL 1.5.0
+# Auditoría — VCA SSL 1.5.1
 
 Creador: papielguapo. Windows x64, JUCE 9.0.5, Release, 15/11/2026.
 
 ## Resultado
 
-Batería DSP aprobada: 11 817 257 comprobaciones, 22.68 s. Pluginval 1.0.4, strictness 10, semilla 671500, SUCCESS, código 0, sobre la copia instalada en Program Files/Common Files/VST3. Logs completos en Reference/Tests.txt y Reference/pluginval-level10.txt. El validador independiente del SDK VST3 no está configurado; auval no aplica a Windows. No se ha realizado escucha humana ni verificación del enrutamiento en cada DAW.
+Batería DSP aprobada: 11 817 257 comprobaciones, 19.01 s. Pluginval 1.0.4, strictness 10, semilla 671501, SUCCESS, código 0, sobre la copia instalada en Program Files/Common Files/VST3. Logs completos en Reference/Tests.txt y Reference/pluginval-level10.txt. El validador independiente del SDK VST3 no está configurado; auval no aplica a Windows. No se ha realizado escucha humana ni verificación del enrutamiento en cada DAW.
 
-SHA256 del VST3 instalado y entregado: `5E72514F430A314F97D1F374BBAE252C4EA601BDE4D363BEB35B2E434E513E4E`.
+SHA256 del VST3 instalado y entregado: `2668B38E7E7C132C02DF3FDC178F5E39D5DFD44C0AD6703710FDB95D9671773D`.
+
+## Edición numérica 1.5.1
+
+Doble clic en el mando o valor para editar. Se añaden lecturas numéricas discretas bajo los nombres, manteniendo posiciones y escala de controles. Enter confirma, Escape cancela mediante Label de JUCE. Prueba funcional de los cinco campos contra APVTS: coma decimal, unidades físicas, Auto, ratio 10:1 y conservación del valor ante texto inválido; PASS. Confirmación al host delimitada por begin/endChangeGesture. Comprobación visual de capturas a escala mínima. No se ha ensayado la interacción física en cada DAW.
 
 ## Sidechain sin cambios de skin
 
 Entrada auxiliar mono/estéreo seleccionada automáticamente cuando el host activa el bus Sidechain. En ausencia de bus se usa el detector interno. Sidechain Source, disponible sólo en parámetros del host, permite Auto (predeterminado), Internal o External. External sin señal detecta silencio; no vuelve a la entrada principal. SC FILTER actúa sobre el detector elegido. La señal auxiliar nunca se suma al audio.
 
-Pruebas de bus mono/estéreo, selección automática, override Internal, auxiliar silencioso con entrada principal fuerte y auxiliar fuerte con entrada principal silenciosa. Los índices anteriores se conservan y el selector se añade al final. Skin y etapa HarmonicStage.h sin cambios respecto a 1.4.0.
+Pruebas de bus mono/estéreo, selección automática, override Internal, auxiliar silencioso con entrada principal fuerte y auxiliar fuerte con entrada principal silenciosa. Los índices anteriores se conservan y el selector se añade al final. Etapa HarmonicStage.h sin cambios respecto a 1.4.0. El DSP completo se conserva respecto a 1.5.0.
 
 ## Dinámica frente a SSLComp
 
