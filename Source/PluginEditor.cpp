@@ -254,7 +254,7 @@ void FaceplateComponent::paint(juce::Graphics& g)
     g.setColour(colour(0xff15191b));g.setFont(font("Arial Black",13,juce::Font::bold));
     g.drawText("BUS Compressor",60,121,124,23,juce::Justification::centredLeft);
     g.setColour(colour(0xffc6cccf));g.fillRect(68.0f,132.0f,95.0f,1.8f);
-    g.setColour(colour(0xff15191b));text(g,"COMPRESSOR",68,146,104,15,10);
+
     lamp(g,{206,32,60,60},processor.apvts.getRawParameterValue("power")->load()>0.5f);
     g.setColour(colour(0xff171c1f));text(g,"POWER",197,102,78,18,14);
     text(g,"ON",176,145,35,17,11);text(g,"OFF",258,145,35,17,11);
