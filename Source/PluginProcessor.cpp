@@ -72,12 +72,7 @@ void VCASSLProcessor::processAudio(juce::AudioBuffer<float>& buffer,juce::MidiBu
  auto b=getBusBuffer(buffer,false,0); const int n=b.getNumChannels(); if(n==0)return;
  auto side=getBusBuffer(buffer,true,1);
  const int scMode=juce::jlimit(0,2,juce::roundToInt(sidechainSource->load()));
- float auxiliaryPeak=0;
- for(int ch=0;ch<side.getNumChannels();++ch)for(int i=0;i<side.getNumSamples();++i)
-  auxiliaryPeak=juce::jmax(auxiliaryPeak,std::abs(safeAudio(side.getSample(ch,i))));
- if(auxiliaryPeak>1.e-7f)externalSilenceSeconds=0;
- else externalSilenceSeconds+=static_cast<double>(b.getNumSamples())/rate;
- const bool ext=scMode==2||(scMode==0&&side.getNumChannels()>0&&externalSilenceSeconds<1.0);
+ const bool ext=scMode==2||(scMode==0&&side.getNumChannels()>0);
  externalDetectorActive.store(ext,std::memory_order_relaxed);
  thresholdDb.setTargetValue(threshold->load()); makeupGain.setTargetValue(gain(makeup->load()));trimGain.setTargetValue(gain(trim->load()));
  wet.setTargetValue(mix->load()/100.f);enabled.setTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);scHz.setTargetValue(scEnabled->load()>0.5f?80.f:0.f);

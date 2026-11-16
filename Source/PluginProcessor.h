@@ -53,7 +53,6 @@ private:
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
         *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled, *sidechainSource;
     juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend;
-    double externalSilenceSeconds = 1.0;
     double rate = 44100;
     float envelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
     float meterRelease = 0, rmsPole = 0;

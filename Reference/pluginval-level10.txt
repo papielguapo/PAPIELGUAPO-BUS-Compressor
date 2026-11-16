@@ -1,14 +1,14 @@
-Started validating: C:\Program Files\Common Files\VST3\VCA SSL.vst3
-Random seed: 0xa3f0d
+Started validating: C:\Program Files\Common Files\VST3\PAPIELGUAPO - BUS Compressor.vst3
+Random seed: 0xa3f71
 Validation started
 Strictness level: 10
 -----------------------------------------------------------------
-Starting tests in: pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\VCA SSL.vst3...
+Starting tests in: pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\PAPIELGUAPO - BUS Compressor.vst3...
 Num plugins found: 1
 
-Testing plugin: VST3-VCA SSL-49c9ce56-6098018d
-Papielguapo: VCA SSL v1.5.1
-Completed tests in pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\VCA SSL.vst3
+Testing plugin: VST3-PAPIELGUAPO - BUS Compressor-9da36c47-6098018d
+Papielguapo: PAPIELGUAPO - BUS Compressor v1.6.1
+Completed tests in pluginval / Scan for plugins located in: C:\Program Files\Common Files\VST3\PAPIELGUAPO - BUS Compressor.vst3
 -----------------------------------------------------------------
 Starting tests in: pluginval / Open plugin (cold)...
 Completed tests in pluginval / Open plugin (cold)
@@ -19,8 +19,8 @@ Completed tests in pluginval / Open plugin (warm)
 -----------------------------------------------------------------
 Starting tests in: pluginval / Plugin info...
 
-Plugin name: VCA SSL
-Alternative names: VCA SSL
+Plugin name: PAPIELGUAPO - BUS Compressor
+Alternative names: PAPIELGUAPO - BUS Compressor
 SupportsDoublePrecision: no
 Reported latency: 0
 Reported taillength: 2

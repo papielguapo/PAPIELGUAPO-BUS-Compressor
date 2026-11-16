@@ -71,4 +71,8 @@ ctest --test-dir build -C Release --output-on-failure
 
 ## Actualización 1.6.0
 
-Nombre de distribución PAPIELGUAPO - BUS Compressor y marca BUS Compressor en el frontal. Identificadores VST3 conservados. FIX queda bloqueado con detector externo; Auto vuelve al interno tras un segundo sin auxiliar y permite activar FIX de nuevo. Los parámetros obsoletos se conservan como no automatizables por compatibilidad.
+Nombre de distribución PAPIELGUAPO - BUS Compressor y marca BUS Compressor en el frontal. Identificadores VST3 conservados. FIX queda bloqueado con detector externo; Auto sigue la activación del bus del host; el silencio nunca cambia el detector. Si el host conserva el bus, seleccionar Internal para recuperar FIX. Los parámetros obsoletos se conservan como no automatizables por compatibilidad.
+
+## Cierre 1.6.1
+
+Auto utiliza el bus auxiliar activado por el host, incluso durante silencio. Al deshabilitar el bus vuelve al detector interno. Si sólo se borra el envío pero el host mantiene el bus activo, seleccionar Sidechain Source = Internal. FIX queda bloqueado con detector externo. Pruebas DSP, estados/automatización y pluginval nivel 10 aprobados sobre esta compilación. Ver auditoría para los límites de prueba en DAW.

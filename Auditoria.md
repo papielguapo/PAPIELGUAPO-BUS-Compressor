@@ -1,43 +1,13 @@
-# Actualización 1.6.0 — PAPIELGUAPO - BUS Compressor
+# Auditoría actual — BUS Compressor 1.6.1
 
-Nombre y frontal actualizados. Compilación Release verificada, captura real del editor revisada. La última prueba DSP tras corregir retorno de FIX aprobó en 17.95 s. El informe y pluginval siguientes corresponden a 1.5.1; no representan una nueva ejecución de pluginval sobre 1.6.0.
+16/11/2026. Compilación Windows x64 Release. Creador papielguapo.
 
-# Auditoría — VCA SSL 1.5.1
+Instalada en Common Files/VST3. SHA256: 55E0E7EEEF275E0012A5F15EBDF049B563BF9AAC22F9347642D1C8B882E8F21C.
 
-Creador: papielguapo. Windows x64, JUCE 9.0.5, Release, 15/11/2026.
+Pruebas DSP PASS, 18.73 s; edición numérica PASS. Pluginval 1.0.4 strictness 10, semilla 671601, SUCCESS sobre el VST3 instalado. Logs actuales en Reference/Tests.txt y Reference/pluginval-level10.txt. Incluyen estados, automatización, buses mono/estéreo, distintas tasas y bloques, entradas hostiles y estabilidad. El validador independiente del SDK VST3 no está configurado.
 
-## Resultado
+Auto ya no detecta conexiones por amplitud: un silencio nunca cambia de detector. Utiliza el auxiliar cuando su bus está activo y vuelve al interno cuando el host lo desactiva. Si el DAW mantiene el bus activo tras borrar el envío, Sidechain Source = Internal permite recuperar FIX. External fuerza el detector auxiliar. FIX no actúa con detector externo, aunque la automatización intente activarlo. La interfaz lo apaga y bloquea. Los parámetros obsoletos se conservan no automatizables por compatibilidad.
 
-Batería DSP aprobada: 11 817 257 comprobaciones, 19.01 s. Pluginval 1.0.4, strictness 10, semilla 671501, SUCCESS, código 0, sobre la copia instalada en Program Files/Common Files/VST3. Logs completos en Reference/Tests.txt y Reference/pluginval-level10.txt. El validador independiente del SDK VST3 no está configurado; auval no aplica a Windows. No se ha realizado escucha humana ni verificación del enrutamiento en cada DAW.
+Los ensayos automatizados no sustituyen la escucha ni una matriz manual de DAWs. FL Studio estaba disponible, pero no se completó una prueba manual del BUS con audio, enrutamiento, guardar/reabrir y automatización. Por tanto esa validación manual sigue pendiente y no se certifica el producto al 100 %. No se ha modificado la sesión de trabajo del 1167; la segunda sesión vacía recibió un EQP-1A durante el intento de carga y no se guardó.
 
-SHA256 del VST3 instalado y entregado: `2668B38E7E7C132C02DF3FDC178F5E39D5DFD44C0AD6703710FDB95D9671773D`.
-
-## Edición numérica 1.5.1
-
-Doble clic en el mando o valor para editar. Se añaden lecturas numéricas discretas bajo los nombres, manteniendo posiciones y escala de controles. Enter confirma, Escape cancela mediante Label de JUCE. Prueba funcional de los cinco campos contra APVTS: coma decimal, unidades físicas, Auto, ratio 10:1 y conservación del valor ante texto inválido; PASS. Confirmación al host delimitada por begin/endChangeGesture. Comprobación visual de capturas a escala mínima. No se ha ensayado la interacción física en cada DAW.
-
-## Sidechain sin cambios de skin
-
-Entrada auxiliar mono/estéreo seleccionada automáticamente cuando el host activa el bus Sidechain. En ausencia de bus se usa el detector interno. Sidechain Source, disponible sólo en parámetros del host, permite Auto (predeterminado), Internal o External. External sin señal detecta silencio; no vuelve a la entrada principal. SC FILTER actúa sobre el detector elegido. La señal auxiliar nunca se suma al audio.
-
-Pruebas de bus mono/estéreo, selección automática, override Internal, auxiliar silencioso con entrada principal fuerte y auxiliar fuerte con entrada principal silenciosa. Los índices anteriores se conservan y el selector se añade al final. Etapa HarmonicStage.h sin cambios respecto a 1.4.0. El DSP completo se conserva respecto a 1.5.0.
-
-## Dinámica frente a SSLComp
-
-Calibración numérica independiente con 191 renders de SSLComp 14.12.90.381. Curvas estáticas interpoladas por umbral, ratio, ataque y release. Auto con recuperación rápida y memoria lenta; releases manuales recalibrados. No contiene código Waves ni depende de su instalación.
-
-En los ocho niveles a 1 kHz, threshold 0, ataque 10 ms y Auto, error máximo frente a Waves: 2:1 0.084 dB; 4:1 0.0015 dB; 10:1 0.0006 dB. Son puntos de calibración, no una garantía general. En el escalón medido, error medio Auto baja de 4.163 a 0.063 dB y manual de 0.748 a 0.0026 dB.
-
-Validación independiente: niveles intermedios con ratio 4 y tres umbrales, error máximo 0.086 dB. Ráfagas no utilizadas en ajuste: error medio 0.005–0.040 dB; el ataque de 0.1 ms conserva un pico de diferencia de 3.27 dB en ventana de 1 ms. Con compresión a otras frecuencias se observan diferencias de hasta 1.27 dB. La interpolación matemática en otros ajustes también conserva errores próximos a 0.86 dB. No es una reproducción sonora 1:1.
-
-En dos fragmentos musicales la correlación tras ajuste constante de volumen mejora: batería 0.99982 y bus 0.99943. La diferencia de RMS sin igualar baja de 1.699 a 0.583 dB en batería, pero sube de 0.293 a 0.796 dB en bus: la mejora no es uniforme. Los fragmentos no se publican en GitHub.
-
-## Audio conservado
-
-KI eliminado. Etapa H2/H3 4× sin cambios: H2 −59.9956 dBc, H3 −73.975 dBc; productos plegados del ensayo de 18 kHz −150.698 y −155.478 dBc. No se inyecta ruido. Ganancia del ruido bajo de entrada: −0.000285 dB en el ensayo. No implica ausencia de intermodulación con música ni sólo dos productos en cualquier señal.
-
-Latencia real declarada tras preparación: 64 samples; rutas dry y bypass alineadas. FIX conserva el detector y equipara RMS, con error inferior a 0.003 dB en los ensayos. Pruebas de silencio, automatización, estados, bloques variables y tasas de 8–384 kHz, entradas NaN/Inf/extremas. Apertura mínima 817 × 126 conservada.
-
-[Mediciones](Reference/Validacion-dinamica.json) · [Calibración](Reference/ModelCalibration.json)
-
-![Comparación medida](Reference/Mejora-dinamica.png)
+Mediciones de dinámica y armónicos en Reference/Mediciones.json y Validacion-dinamica.json corresponden al DSP de 1.5.0; las modificaciones posteriores afectan edición, nombre y gestión de FIX/sidechain. No equivalencia sonora 1:1 con Waves. Conservar sus límites: diferencias hasta 1.27 dB por frecuencia y transitorios rápidos con discrepancias puntuales de 3.27 dB.
