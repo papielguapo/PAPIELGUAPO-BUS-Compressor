@@ -9,8 +9,8 @@ float db(float x) { return 20.f*std::log10(juce::jmax(x,1.e-9f)); }
 juce::AudioProcessorValueTreeState::ParameterLayout VCASSLProcessor::makeParameters() {
  juce::AudioProcessorValueTreeState::ParameterLayout p;
  auto f=[&](const char* id,const char* name,float lo,float hi,float def,float step=0.01f) {
- p.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{id,1},name,juce::NormalisableRange<float>(lo,hi,step),def)); };
- auto b=[&](const char* id,const char* name,bool def) { p.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{id,1},name,def)); };
+ p.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID{id,1},name,juce::NormalisableRange<float>(lo,hi,step),def,juce::AudioParameterFloatAttributes().withAutomatable(juce::String(id)!="scFilter"&&juce::String(id)!="fadeRate"))); };
+ auto b=[&](const char* id,const char* name,bool def) { p.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID{id,1},name,def,juce::AudioParameterBoolAttributes().withAutomatable(juce::String(id)!="ki"&&juce::String(id)!="externalSC"&&juce::String(id)!="fade"))); };
  auto c=[&](const char* id,const char* name,juce::StringArray values,int def) {p.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID{id,1},name,values,def));};
  b("power","Power",true); f("threshold","Threshold (dBu)",-15,15,0); f("makeup","Make-Up (dB)",-5,15,0);
  c("attack","Attack",{"0.1 ms","0.3 ms","1 ms","3 ms","10 ms","30 ms"},4);
@@ -72,12 +72,18 @@ void VCASSLProcessor::processAudio(juce::AudioBuffer<float>& buffer,juce::MidiBu
  auto b=getBusBuffer(buffer,false,0); const int n=b.getNumChannels(); if(n==0)return;
  auto side=getBusBuffer(buffer,true,1);
  const int scMode=juce::jlimit(0,2,juce::roundToInt(sidechainSource->load()));
- const bool ext=scMode==2||(scMode==0&&side.getNumChannels()>0);
+ float auxiliaryPeak=0;
+ for(int ch=0;ch<side.getNumChannels();++ch)for(int i=0;i<side.getNumSamples();++i)
+  auxiliaryPeak=juce::jmax(auxiliaryPeak,std::abs(safeAudio(side.getSample(ch,i))));
+ if(auxiliaryPeak>1.e-7f)externalSilenceSeconds=0;
+ else externalSilenceSeconds+=static_cast<double>(b.getNumSamples())/rate;
+ const bool ext=scMode==2||(scMode==0&&side.getNumChannels()>0&&externalSilenceSeconds<1.0);
+ externalDetectorActive.store(ext,std::memory_order_relaxed);
  thresholdDb.setTargetValue(threshold->load()); makeupGain.setTargetValue(gain(makeup->load()));trimGain.setTargetValue(gain(trim->load()));
  wet.setTargetValue(mix->load()/100.f);enabled.setTargetValue(power->load()>0.5f&&bypass->load()<0.5f?1.f:0.f);scHz.setTargetValue(scEnabled->load()>0.5f?80.f:0.f);
  const int ai=juce::jlimit(0,5,juce::roundToInt(attack->load())),ri=juce::jlimit(0,4,juce::roundToInt(release->load()));
  dynamics.configure(juce::jlimit(0,2,juce::roundToInt(ratio->load())),ai,ri);
- fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
+ if(ext)fixBlend.setCurrentAndTargetValue(0.f);else fixBlend.setTargetValue(fix->load()>0.5f?1.f:0.f);
  const float fadeStep=1.f/static_cast<float>(rate*fadeRate->load());
  for(int i=0;i<b.getNumSamples();++i) {
   float input[2]{},dry[2]{};for(int ch=0;ch<n;++ch){input[ch]=safeAudio(b.getSample(ch,i));

@@ -188,6 +188,10 @@ void FaceplateComponent::timerCallback()
 {
     for(size_t i=0;i<knobs.size();++i)if(!valueLabels[i].isBeingEdited())
         valueLabels[i].setText(knobs[i].getTextFromValue(knobs[i].getValue()),juce::dontSendNotification);
+    const int source=juce::roundToInt(processor.apvts.getRawParameterValue("sidechainSource")->load());
+    const bool external=source==2||(source==0&&processor.externalDetectorActive.load(std::memory_order_relaxed));
+    switches[2].setEnabled(!external);
+    if(external){auto* fix=processor.apvts.getParameter("fix");if(fix->getValue()>.5f){fix->beginChangeGesture();fix->setValueNotifyingHost(0);fix->endChangeGesture();}}
     shownGr=processor.currentGrDb.load(std::memory_order_relaxed);
     shownOut=processor.currentOutDb.load(std::memory_order_relaxed);
     repaint();
@@ -247,8 +251,8 @@ void FaceplateComponent::paint(juce::Graphics& g)
         g.setColour(colour(0xff020506));g.fillRoundedRectangle(x+1,y+1,29,20,10);
     }
     for(auto point:{juce::Point<float>(165,53),{165,198},{1417,53},{1417,198}})screw(g,point.x,point.y);
-    g.setColour(colour(0xff15191b));g.setFont(font("Arial Black",18,juce::Font::bold));
-    g.drawText("VCA SSL",68,121,104,23,juce::Justification::centredLeft);
+    g.setColour(colour(0xff15191b));g.setFont(font("Arial Black",13,juce::Font::bold));
+    g.drawText("BUS Compressor",60,121,124,23,juce::Justification::centredLeft);
     g.setColour(colour(0xffc6cccf));g.fillRect(68.0f,132.0f,95.0f,1.8f);
     g.setColour(colour(0xff15191b));text(g,"COMPRESSOR",68,146,104,15,10);
     lamp(g,{206,32,60,60},processor.apvts.getRawParameterValue("power")->load()>0.5f);

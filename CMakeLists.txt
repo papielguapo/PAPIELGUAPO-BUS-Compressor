@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.22)
-project(VCASSL VERSION 1.5.1 LANGUAGES C CXX)
+project(VCASSL VERSION 1.6.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 option(VCASSL_COPY_PLUGIN_AFTER_BUILD "Install VST3 after building (may require elevation)" OFF)
@@ -21,7 +21,7 @@ juce_add_plugin(VCASSL
     IS_MIDI_EFFECT FALSE EDITOR_WANTS_KEYBOARD_FOCUS FALSE
     COPY_PLUGIN_AFTER_BUILD ${VCASSL_COPY_PLUGIN_AFTER_BUILD}
     PLUGIN_MANUFACTURER_CODE Papi PLUGIN_CODE VcSL
-    FORMATS VST3 Standalone PRODUCT_NAME "VCA SSL")
+    FORMATS VST3 Standalone PRODUCT_NAME "PAPIELGUAPO - BUS Compressor")
 target_sources(VCASSL PRIVATE Source/BusDynamics.h Source/BusReference.h Source/HarmonicStage.h Source/PluginProcessor.h Source/PluginProcessor.cpp Source/PluginEditor.h Source/PluginEditor.cpp)
 target_compile_definitions(VCASSL PUBLIC JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
 target_link_libraries(VCASSL PRIVATE juce::juce_audio_utils PUBLIC juce::juce_recommended_config_flags juce::juce_recommended_warning_flags)

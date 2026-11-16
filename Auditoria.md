@@ -1,3 +1,7 @@
+# Actualización 1.6.0 — PAPIELGUAPO - BUS Compressor
+
+Nombre y frontal actualizados. Compilación Release verificada, captura real del editor revisada. La última prueba DSP tras corregir retorno de FIX aprobó en 17.95 s. El informe y pluginval siguientes corresponden a 1.5.1; no representan una nueva ejecución de pluginval sobre 1.6.0.
+
 # Auditoría — VCA SSL 1.5.1
 
 Creador: papielguapo. Windows x64, JUCE 9.0.5, Release, 15/11/2026.

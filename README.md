@@ -1,10 +1,10 @@
-# VCA SSL COMPRESSOR — papielguapo
+# PAPIELGUAPO - BUS Compressor — papielguapo
 
 **Creador: [papielguapo](https://github.com/papielguapo)**
 
-![VCA SSL COMPRESSOR — frontal actual](Preview.png)
+![PAPIELGUAPO - BUS Compressor — frontal actual](Preview.png)
 
-[Descargar para Windows x64: VST3, Standalone y código](https://github.com/papielguapo/VCASSL/releases/latest)
+[Descargar para Windows x64: VST3, Standalone y código](https://github.com/papielguapo/PAPIELGUAPO-BUS-Compressor/releases/latest)
 
 Compresor VCA de bus basado en el frontal vectorial de [FET67](https://github.com/papielguapo/FET67). Panel de aluminio, mandos violetas, piloto, firma y lienzo 1634 × 252, con escala del 50 al 250 %. **Siempre se abre al mínimo: 817 × 126 (50 %), también al reabrir el editor o cargar sesiones antiguas.** Se puede ampliar durante el uso.
 
@@ -55,7 +55,7 @@ Latencia declarada de 64 samples; cola conservadora de dos segundos para la elim
 
 ## Instalación y compilación
 
-Copiar la carpeta completa `Binaries/VCA SSL.vst3` a `C:/Program Files/Common Files/VST3` (puede requerir administrador), y volver a escanear el DAW. `Binaries/VCA SSL.exe` es Standalone. Fabricante Papi, plugin VcSL, bundle com.papielguapo.vcassl. No sustituye FET67.
+Copiar la carpeta completa `Binaries/PAPIELGUAPO - BUS Compressor.vst3` a `C:/Program Files/Common Files/VST3` (puede requerir administrador), y volver a escanear el DAW. `Binaries/PAPIELGUAPO - BUS Compressor.exe` es Standalone. Fabricante Papi, plugin VcSL, bundle com.papielguapo.vcassl. No sustituye FET67.
 
 C++17, JUCE 9.0.5 y Visual Studio con C++/Windows SDK. CMake usa C:/JUCE o descarga JUCE. Respetar la licencia JUCE correspondiente a la distribución.
 
@@ -68,3 +68,7 @@ ctest --test-dir build -C Release --output-on-failure
 [Informe de auditoría](Auditoria.md) · [Log pluginval nivel 10](Reference/pluginval-level10.txt) · [Pruebas DSP](Reference/Tests.txt).
 
 ![SC FILTER ON — piloto morado pequeño](Preview-SC-ON.png)
+
+## Actualización 1.6.0
+
+Nombre de distribución PAPIELGUAPO - BUS Compressor y marca BUS Compressor en el frontal. Identificadores VST3 conservados. FIX queda bloqueado con detector externo; Auto vuelve al interno tras un segundo sin auxiliar y permite activar FIX de nuevo. Los parámetros obsoletos se conservan como no automatizables por compatibilidad.

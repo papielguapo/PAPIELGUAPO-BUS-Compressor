@@ -19,7 +19,7 @@ public:
     juce::AudioProcessorParameter* getBypassParameter() const override;
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override { return true; }
-    const juce::String getName() const override { return "VCA SSL"; }
+    const juce::String getName() const override { return "PAPIELGUAPO - BUS Compressor"; }
     bool acceptsMidi() const override { return false; }
     bool producesMidi() const override { return false; }
     bool isMidiEffect() const override { return false; }
@@ -34,6 +34,7 @@ public:
     static juce::AudioProcessorValueTreeState::ParameterLayout makeParameters();
     juce::AudioProcessorValueTreeState apvts;
     std::atomic<float> currentGrDb { 0.0f }, currentOutDb { -100.0f };
+    std::atomic<bool> externalDetectorActive { false };
     std::atomic<int> editorWidth { 817 }, editorHeight { 126 };
 private:
     struct HighPass
@@ -52,6 +53,7 @@ private:
     std::atomic<float> *power, *threshold, *makeup, *attack, *release, *ratio, *bypass,
         *scFilter, *mix, *trim, *fade, *fadeRate, *externalSC, *fix, *scEnabled, *sidechainSource;
     juce::SmoothedValue<float> thresholdDb, makeupGain, trimGain, wet, enabled, scHz, fixBlend;
+    double externalSilenceSeconds = 1.0;
     double rate = 44100;
     float envelope = 0, fadeGain = 1, rms = 0, grMeter = 0;
     float meterRelease = 0, rmsPole = 0;
